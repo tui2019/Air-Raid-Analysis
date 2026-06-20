@@ -13,6 +13,7 @@ __pycache__/
 output/
 analysis_summary.txt
 oblast_duration_analysis.csv
+progress_bar_demo.md
 
 # OS metadata
 .DS_Store
