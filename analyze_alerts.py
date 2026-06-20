@@ -193,8 +193,8 @@ def main():
     results['union_duration'] = results['union_duration'].fillna(timedelta())
     results['alert_count'] = results['alert_count'].fillna(0).astype(int)
     
-    # Convert timedeltas to human-readable hours
-    results['cumulative_hours'] = results['cumulative_duration'].dt.total_seconds() / 3600.0
+    # Convert timedeltas to human-readable hours / days
+    results['cumulative_days'] = results['cumulative_duration'].dt.total_seconds() / 86400.0
     results['union_hours'] = results['union_duration'].dt.total_seconds() / 3600.0
     
     # Sort by Union Duration descending, then by alert count, then alphabetically
@@ -205,10 +205,10 @@ def main():
     
     # Display the results
     print("\n" + "="*70)
-    print(f"{'Oblast (Region)':<30} | {'Alerts':<6} | {'Union (Hrs)':<12} | {'Cumulative (Hrs)':<16}")
+    print(f"{'Oblast (Region)':<30} | {'Alerts':<6} | {'Union (Hrs)':<12} | {'Cumulative (Days)':<17}")
     print("="*70)
     for _, row in results.iterrows():
-        print(f"{row['oblast']:<30} | {row['alert_count']:<6} | {row['union_hours']:11.2f} | {row['cumulative_hours']:15.2f}")
+        print(f"{row['oblast']:<30} | {row['alert_count']:<6} | {row['union_hours']:11.2f} | {row['cumulative_days']:17.2f}")
     print("="*70)
     
     # Save output to static CSV filename to avoid folder clutter
@@ -222,10 +222,10 @@ def main():
         f.write(f"Ukraine Air Raid Alerts Duration Analysis (Last {days_to_analyze} Days)\n")
         f.write(f"Reference Period: {start_date} to {max_date} (UTC)\n")
         f.write(f"Total alert records: {len(recent_df)}\n\n")
-        f.write(f"{'Oblast':<30} | {'Alerts':<6} | {'Union (Hrs)':<12} | {'Cumulative (Hrs)':<16}\n")
-        f.write("-" * 75 + "\n")
+        f.write(f"{'Oblast':<30} | {'Alerts':<6} | {'Union (Hrs)':<12} | {'Cumulative (Days)':<17}\n")
+        f.write("-" * 77 + "\n")
         for _, row in results.iterrows():
-            f.write(f"{row['oblast']:<30} | {row['alert_count']:<6} | {row['union_hours']:11.2f} | {row['cumulative_hours']:15.2f}\n")
+            f.write(f"{row['oblast']:<30} | {row['alert_count']:<6} | {row['union_hours']:11.2f} | {row['cumulative_days']:17.2f}\n")
     print(f"Summary written to: {summary_file}")
     
     total_time = time.time() - total_start
