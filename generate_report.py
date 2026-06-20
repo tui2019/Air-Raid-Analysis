@@ -910,10 +910,10 @@ def main():
                             {" ".join(f"<th>{m}</th>" for m in monthly_pivot.columns)}
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="monthlyTableBody">
         """
         for oblast, row in monthly_pivot.iterrows():
-            monthly_trends_html += f"<tr><td><strong>{oblast}</strong></td>"
+            monthly_trends_html += f'<tr class="clickable" data-region="{oblast}" onclick="selectRegion(this.dataset.region)"><td><strong>{oblast}</strong></td>'
             for m in monthly_pivot.columns:
                 monthly_trends_html += f'<td align="right">{row[m]:.1f}h</td>'
             monthly_trends_html += "</tr>"
@@ -1205,6 +1205,11 @@ def main():
             }}
         }}
 
+        function selectRegion(region) {{
+            document.getElementById('regionSelect').value = region;
+            updateCharts(region);
+        }}
+
         let currentRegion = 'Nationwide';
         let diurnalChart, weeklyChart, timelineChart;
 
@@ -1335,6 +1340,15 @@ def main():
                     row.classList.remove('selected');
                 }}
             }});
+
+            // Highlight monthly table row
+            document.querySelectorAll('#monthlyTableBody tr').forEach(row => {{
+                if (row.dataset.region === region) {{
+                    row.classList.add('selected');
+                }} else {{
+                    row.classList.remove('selected');
+                }}
+            }});
         }}
 
         function renderTable(filterText = '') {{
@@ -1350,8 +1364,7 @@ def main():
                 tr.className = 'clickable' + (row.oblast === currentRegion ? ' selected' : '');
                 tr.dataset.region = row.oblast;
                 tr.onclick = () => {{
-                    document.getElementById('regionSelect').value = row.oblast;
-                    updateCharts(row.oblast);
+                    selectRegion(row.oblast);
                 }};
                 
                 tr.innerHTML = '<td><strong>' + row.oblast + '</strong></td>' +
