@@ -11,6 +11,7 @@ The generated results are organized as follows to prevent clutter:
 ```
 output/
 └── txt/
+    ├── ai_overview.txt               # AI overview general and region-specific summaries (if API key provided)
     ├── daily_trends_sparklines.txt   # ASCII timeline trend indicators for all regions
     ├── historical_monthly.txt        # Month-by-month pivot totals (for queries > 60 days)
     ├── regional_summary.txt          # Macro-level threat comparison table

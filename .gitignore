@@ -16,3 +16,6 @@ oblast_duration_analysis.csv
 
 # OS metadata
 .DS_Store
+
+# Configuration / Secrets
+.env

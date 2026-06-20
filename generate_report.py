@@ -24,6 +24,12 @@ import pandas as pd
 import numpy as np
 from datetime import timedelta, datetime
 
+try:
+    from google import genai
+    HAS_GENAI = True
+except ImportError:
+    HAS_GENAI = False
+
 # Define remote data URL
 DATA_URL = "https://raw.githubusercontent.com/Vadimkin/ukrainian-air-raid-sirens-dataset/refs/heads/main/datasets/official_data_en.csv"
 
@@ -120,6 +126,95 @@ def format_days_to_dh(days_float):
     d = total_hours // 24
     h = total_hours % 24
     return f"{d}d {h}h"
+
+def load_env():
+    """
+    Loads environment variables from .env file if it exists.
+    """
+    env_path = os.path.join(BASE_DIR, '.env')
+    if os.path.exists(env_path):
+        with open(env_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#'):
+                    parts = line.split('=', 1)
+                    if len(parts) == 2:
+                        key = parts[0].strip()
+                        val = parts[1].strip()
+                        if (val.startswith('"') and val.endswith('"')) or (val.startswith("'") and val.endswith("'")):
+                            val = val[1:-1]
+                        os.environ[key] = val
+
+def generate_ai_overview(regional_stats_df, days_to_analyze):
+    """
+    Generates AI overview from regional stats using Gemini API.
+    """
+    if not HAS_GENAI:
+        print("   [Gemini API] google-genai library not found. Skipping AI overview.")
+        return None
+        
+    load_env()
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        print("   [Gemini API] GEMINI_API_KEY not found in environment. Skipping AI overview.")
+        return None
+        
+    print("   [Gemini API] Initializing client and generating AI overview...")
+    try:
+        client = genai.Client(api_key=api_key)
+        
+        # Prepare context data
+        table_rows = []
+        for _, row in regional_stats_df.iterrows():
+            table_rows.append(
+                f"- {row['oblast']}: {row['alert_count']} alerts, "
+                f"{row['union_hours']:.1f} hours active ({row['pct_active']:.1f}% active)"
+            )
+        data_summary = "\n".join(table_rows)
+        
+        prompt = f"""
+You are an expert data analyst. You are analyzing Ukraine air raid alerts duration data.
+Here is the regional summary data for the last {days_to_analyze} days:
+
+{data_summary}
+
+Please generate an AI overview of this data.
+Your response MUST be a JSON object with the following exact keys and structure:
+{{
+  "general_overview": "A 4-5 sentence summary of the general trends of the time period, including average numbers (e.g. average active percentage, average alert counts, or total active duration) and noting which regions are most/least affected.",
+  "regional_overviews": {{
+    "Oblast Name 1": "A 1-2 sentence quick summary of alert levels and durations for this specific region.",
+    "Oblast Name 2": "A 1-2 sentence quick summary of alert levels and durations for this specific region.",
+    ...
+  }}
+}}
+
+Make sure the JSON is valid and only output the raw JSON object. Do not wrap it in markdown code blocks like ```json ... ```. The keys in "regional_overviews" must match the exact names of the oblasts in the data.
+"""
+        response = client.models.generate_content(
+            model="gemini-2.0-flash-lite",
+            contents=prompt
+        )
+        
+        response_text = response.text.strip()
+        if response_text.startswith("```"):
+            first_nl = response_text.find("\n")
+            if first_nl != -1:
+                response_text = response_text[first_nl:].strip()
+            if response_text.endswith("```"):
+                response_text = response_text[:-3].strip()
+                
+        import json
+        result = json.loads(response_text)
+        if "general_overview" in result and "regional_overviews" in result:
+            print("   [Gemini API] AI overview generated successfully.")
+            return result
+        else:
+            print("   [Gemini API] API response did not contain the expected keys.")
+            return None
+    except Exception as e:
+        print(f"   [Gemini API Warning] Failed to generate AI overview: {e}")
+        return None
 
 def main():
     parser = argparse.ArgumentParser(description="Generate Ukraine air raid alerts reports.")
@@ -273,6 +368,39 @@ def main():
     regional_stats = regional_stats.sort_values(by=['union_hours', 'alert_count', 'oblast'], ascending=[False, False, True])
     
     # Regional statistics comparison ready
+    # Generate AI Overview if configured
+    ai_data = generate_ai_overview(regional_stats, days_to_analyze)
+    
+    if ai_data:
+        # Write TXT AI Overview
+        ai_txt_path = os.path.join(TXT_OUT_DIR, 'ai_overview.txt')
+        with open(ai_txt_path, 'w', encoding='utf-8') as f:
+            f.write("================================================================================\n")
+            f.write("UKRAINE AIR RAID ALERTS: AI ANALYSIS OVERVIEW\n")
+            f.write("================================================================================\n\n")
+            f.write("GENERAL TRENDS SUMMARY:\n")
+            f.write(f"{ai_data['general_overview']}\n\n")
+            f.write("================================================================================\n")
+            f.write("REGION-SPECIFIC AI INSIGHTS:\n")
+            f.write("================================================================================\n")
+            for oblast, insight in ai_data['regional_overviews'].items():
+                f.write(f"- {oblast}: {insight}\n")
+            f.write("\n================================================================================\n")
+            
+        # Write MD AI Overview
+        ai_md_path = os.path.join(MD_OUT_DIR, 'ai_overview.md')
+        with open(ai_md_path, 'w', encoding='utf-8') as f:
+            f.write("# 🤖 Ukraine Air Raid Alerts: AI Analysis Overview\n\n")
+            f.write("## 📋 General Trends Summary\n")
+            f.write(f"{ai_data['general_overview']}\n\n")
+            f.write("---\n\n")
+            f.write("## 📍 Region-Specific AI Insights\n")
+            f.write("| Region | AI Summary Insight |\n")
+            f.write("|:---|:---|\n")
+            for oblast, insight in ai_data['regional_overviews'].items():
+                f.write(f"| **{oblast}** | {insight} |\n")
+            f.write("\n")
+        print("   AI overview reports saved.")
        # Write TXT report 1: Regional Summary
     summary_txt_path = os.path.join(TXT_OUT_DIR, 'regional_summary.txt')
     with open(summary_txt_path, 'w') as f:
@@ -503,6 +631,8 @@ def main():
                     elif row['pct'] == w_reg_min:
                         label = " (Min)"
                 f.write(f"  {weekday_names[int(row['weekday'])]:<12} | {row['pct']:6.2f}% | {get_ascii_indicator(row['pct']/100.0)}{label}\n")
+            if ai_data and 'regional_overviews' in ai_data and oblast in ai_data['regional_overviews']:
+                f.write(f"\nAI Overview Insight:\n  {ai_data['regional_overviews'][oblast]}\n")
             f.write("\n\n" + "-" * 80 + "\n\n")
 
     # Write MD seasonality regional
@@ -551,6 +681,8 @@ def main():
                         label = " **(Min)**"
                 indicator = get_ascii_indicator(row['pct']/100.0)
                 f.write(f"| {weekday_names[int(row['weekday'])]} | {row['pct']:.2f}% | `{indicator}`{label} |\n")
+            if ai_data and 'regional_overviews' in ai_data and oblast in ai_data['regional_overviews']:
+                f.write(f"\n**🤖 AI Overview Insight:** {ai_data['regional_overviews'][oblast]}\n")
             f.write("\n---\n\n")
             
     print(f"   Seasonality reports saved.")
@@ -702,6 +834,24 @@ def main():
     seasonality_json_str = json.dumps(seasonality_json)
     daily_trends_json_str = json.dumps(daily_trends_json)
     dates_list_str = json.dumps(dates_list)
+
+    ai_block_html = ""
+    ai_regional_json_str = "{}"
+    if ai_data:
+        ai_block_html = f"""
+    <div class="card" style="max-width: 1400px; margin: 0 auto 2rem auto; width: calc(100% - 3rem);">
+        <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-bottom: none; margin-bottom: 0; padding-bottom: 0;" onclick="toggleAiOverview()">
+            <span style="display: flex; align-items: center; gap: 0.5rem; color: #f1f5f9;">
+                <span>🤖</span> AI Overview (General Trends)
+            </span>
+            <span id="aiToggleIcon" style="font-size: 0.875rem; color: #94a3b8; font-weight: normal;">[Expand]</span>
+        </div>
+        <div id="aiContent" style="display: none; margin-top: 1rem; border-top: 1px solid #383c45; padding-top: 1rem; line-height: 1.6; color: #cbd5e1; font-size: 0.95rem;">
+            {ai_data['general_overview']}
+        </div>
+    </div>
+        """
+        ai_regional_json_str = json.dumps(ai_data['regional_overviews'])
 
     # Monthly trends if available
     monthly_trends_html = ""
@@ -901,6 +1051,8 @@ def main():
         </div>
     </div>
     
+    {ai_block_html}
+    
     <div class="container">
         <!-- Left Column: Table and Monthly Trends -->
         <div>
@@ -947,6 +1099,11 @@ def main():
                     </div>
                 </div>
                 
+                <div id="regionalAiBlock" style="display: none; background-color: #1e2126; border: 1px solid #383c45; border-radius: 0.25rem; padding: 0.75rem 1rem; margin-bottom: 1.5rem; font-size: 0.875rem; line-height: 1.5; color: #cbd5e1;">
+                    <span style="font-weight: 600; color: #ef4444; display: block; margin-bottom: 0.25rem;">🤖 Regional AI Insight:</span>
+                    <span id="regionalAiText"></span>
+                </div>
+                
                 <div class="chart-box" style="height: 350px;">
                     <canvas id="timelineChart"></canvas>
                 </div>
@@ -974,6 +1131,19 @@ def main():
         const seasonalityData = {seasonality_json_str};
         const dailyTrendsData = {daily_trends_json_str};
         const datesList = {dates_list_str};
+        const regionalAiData = {ai_regional_json_str};
+
+        function toggleAiOverview() {{
+            var content = document.getElementById("aiContent");
+            var icon = document.getElementById("aiToggleIcon");
+            if (content.style.display === "none") {{
+                content.style.display = "block";
+                icon.innerText = "[Collapse]";
+            }} else {{
+                content.style.display = "none";
+                icon.innerText = "[Expand]";
+            }}
+        }}
 
         let currentRegion = 'Nationwide';
         let diurnalChart, weeklyChart, timelineChart;
@@ -1087,6 +1257,14 @@ def main():
             timelineChart.data.datasets[0].label = region === 'Nationwide' ? 'Nationwide Avg Active Hours' : `${{region}} Active Hours`;
             timelineChart.data.datasets[0].data = dailyTrendsData[region];
             timelineChart.update();
+            
+            // Update regional AI overview
+            if (typeof regionalAiData !== 'undefined' && regionalAiData[region]) {{
+                document.getElementById('regionalAiText').innerText = regionalAiData[region];
+                document.getElementById('regionalAiBlock').style.display = 'block';
+            }} else {{
+                document.getElementById('regionalAiBlock').style.display = 'none';
+            }}
             
             // Highlight table row
             document.querySelectorAll('#regionalTableBody tr').forEach(row => {{

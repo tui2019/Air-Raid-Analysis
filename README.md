@@ -54,12 +54,14 @@ The script generates a single-page interactive dashboard and structured text/mar
 output/
 ├── dashboard.html                  # Single-page interactive HTML dashboard
 ├── txt/
+│   ├── ai_overview.txt             # AI overview general and region-specific summaries (if API key provided)
 │   ├── daily_trends_sparklines.txt # ASCII timeline trend indicators for all regions
 │   ├── historical_monthly.txt      # Month-by-month pivot totals (for queries > 60 days)
 │   ├── regional_summary.txt        # Macro-level threat comparison table
 │   ├── seasonality_nationwide.txt  # Nationwide hourly & weekly active heat indicators
 │   └── seasonality_regional.txt    # Region-specific hourly & weekly threat profiles
 └── md/
+    ├── ai_overview.md              # Markdown version of AI overview summaries (if API key provided)
     ├── daily_trends_sparklines.md  # Markdown version of daily sparkline timelines
     ├── historical_monthly.md       # Markdown version of historical monthly pivots
     ├── regional_summary.md         # Markdown version of regional summary table
