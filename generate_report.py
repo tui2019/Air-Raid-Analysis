@@ -459,12 +459,11 @@ def main():
     load_env()
     api_key = os.environ.get("GEMINI_API_KEY")
     if HAS_GENAI and api_key:
-        spinner = Spinner("   Generating AI analysis overview (Gemini API)...")
+        spinner = Spinner("5. Generating AI analysis overview (Gemini API)...")
         spinner.start()
         ai_data = generate_ai_overview(regional_stats, days_to_analyze, daily_union_grid)
         spinner.stop()
         if ai_data:
-            print(f"✔   AI overview generated successfully in {time.time()-t0_ai:.2f}s.")
             # Write TXT AI Overview
             ai_txt_path = os.path.join(TXT_OUT_DIR, 'ai_overview.txt')
             with open(ai_txt_path, 'w', encoding='utf-8') as f:
@@ -493,14 +492,14 @@ def main():
                 for oblast, insight in ai_data['regional_overviews'].items():
                     f.write(f"| **{oblast}** | {insight} |\n")
                 f.write("\n")
-            print("✔   AI overview reports saved.")
+            print(f"✔ 5. AI overview generated successfully in {time.time()-t0_ai:.2f}s.")
         else:
-            print("❌   Failed to generate AI overview.")
+            print("❌ 5. Failed to generate AI overview.")
     else:
-        print("💡   AI overview generation skipped (google-genai missing or GEMINI_API_KEY unset).")
-    # 5. Writing regional summary reports
+        print("💡 5. AI overview generation skipped (google-genai missing or GEMINI_API_KEY unset).")
+    # 6. Writing regional summary reports
     t0 = time.time()
-    spinner = Spinner("5. Writing regional summary reports...")
+    spinner = Spinner("6. Writing regional summary reports...")
     spinner.start()
     # Write TXT report 1: Regional Summary
     summary_txt_path = os.path.join(TXT_OUT_DIR, 'regional_summary.txt')
@@ -527,10 +526,10 @@ def main():
             f.write(f"| {row['oblast']} | {row['alert_count']} | {row['union_hours']:.2f} | {format_days_to_dh(row['union_days'])} | {row['pct_active']:.2f}% |\n")
         f.write(f"\n*Total alert records processed (excluding permanent alerts): {alert_counts['alert_count'].sum()}*\n")
     spinner.stop()
-    print(f"✔ 5. Regional summary reports saved in {time.time()-t0:.2f}s.")
+    print(f"✔ 6. Regional summary reports saved in {time.time()-t0:.2f}s.")
     
     t0 = time.time()
-    spinner = Spinner("6. Calculating hourly and weekly seasonality profiles...")
+    spinner = Spinner("7. Calculating hourly and weekly seasonality profiles...")
     spinner.start()
     
     # Merge overlapping intervals *per region* first to get regional union intervals.
@@ -789,12 +788,12 @@ def main():
             f.write("\n---\n\n")
             
     spinner.stop()
-    print(f"✔ 6. Seasonality profiles reports saved in {time.time()-t0:.2f}s.")
+    print(f"✔ 7. Seasonality profiles reports saved in {time.time()-t0:.2f}s.")
     
-    # 7. Monthly aggregation (if period > 60 days)
+    # 8. Monthly aggregation (if period > 60 days)
     if days_to_analyze > 60:
         t0 = time.time()
-        spinner = Spinner("7. Calculating historical monthly trends...")
+        spinner = Spinner("8. Calculating historical monthly trends...")
         spinner.start()
         daily_union_grid['month'] = pd.to_datetime(daily_union_grid['date']).dt.to_period('M')
         
@@ -841,10 +840,10 @@ def main():
                 f.write(f"| {oblast} | " + " | ".join(f"{row[m]:.1f}h" for m in monthly_pivot.columns) + " |\n")
                 
         spinner.stop()
-        print(f"✔ 7. Historical monthly trends reports saved in {time.time()-t0:.2f}s.")
+        print(f"✔ 8. Historical monthly trends reports saved in {time.time()-t0:.2f}s.")
         
     t0 = time.time()
-    spinner = Spinner("8. Generating daily sparkline trends...")
+    spinner = Spinner("9. Generating daily sparkline trends...")
     spinner.start()
     # Generate daily sparklines for all regions
     sparklines = []
@@ -905,11 +904,11 @@ def main():
         f.write(f"*The timeline is displayed chronologically from left (oldest date) to right (most recent date).*\n")
             
     spinner.stop()
-    print(f"✔ 8. Daily sparkline trends reports saved in {time.time()-t0:.2f}s.")
+    print(f"✔ 9. Daily sparkline trends reports saved in {time.time()-t0:.2f}s.")
     
-    # 9. Generate HTML Dashboard
+    # 10. Generate HTML Dashboard
     t0 = time.time()
-    spinner = Spinner("9. Generating interactive HTML dashboard...")
+    spinner = Spinner("10. Generating interactive HTML dashboard...")
     spinner.start()
     summary_data = []
     for _, row in regional_stats.iterrows():
@@ -1475,7 +1474,7 @@ def main():
         f.write(html_template)
         
     spinner.stop()
-    print(f"✔ 9. Interactive HTML dashboard generated and saved in {time.time()-t0:.2f}s.")
+    print(f"✔ 10. Interactive HTML dashboard generated and saved in {time.time()-t0:.2f}s.")
 
     total_time = time.time() - total_start
     print(f"\n================================================================================")
