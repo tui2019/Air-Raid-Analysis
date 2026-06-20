@@ -106,10 +106,12 @@ def get_ascii_sparkline(daily_hours):
 
 def get_ascii_indicator(pct):
     """
-    Generates a horizontal ASCII bar representing percentage.
+    Generates a horizontal ASCII bar representing percentage, filling empty space with light shade characters.
     """
-    bar_len = int(round(pct * 50))  # Max 50 characters
-    return "█" * bar_len if bar_len > 0 else "."
+    total_len = 50
+    filled_len = max(0, min(total_len, int(round(pct * total_len))))
+    empty_len = total_len - filled_len
+    return "█" * filled_len + "░" * empty_len
 
 def format_days_to_dh(days_float):
     """
