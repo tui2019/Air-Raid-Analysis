@@ -1,0 +1,17 @@
+# Virtual environment
+venv/
+.venv/
+env/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Output files
+oblast_duration_analysis.csv
+analysis_summary.txt
+
+# OS metadata
+.DS_Store
