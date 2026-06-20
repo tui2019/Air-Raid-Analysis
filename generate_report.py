@@ -292,23 +292,24 @@ def main():
         
     hour_df = pd.DataFrame(hourly_segments, columns=['oblast', 'weekday', 'hour', 'duration_seconds'])
     
-    # Calculate how many instances of each hour bin and weekday are in the window (for normalizing)
-    num_days = (max_date.date() - start_date.date()).days + 1
-    
-    # Build weekday weights based on how many Mondays, Tuesdays, etc. are in the date range
-    weekday_counts = {i: 0 for i in range(7)}
-    curr_d = start_date.date()
-    while curr_d <= max_date.date():
-        weekday_counts[curr_d.weekday()] += 1
-        curr_d += timedelta(days=1)
+    # Calculate exact capacities of weekdays in the window (including fractional start/end days)
+    def get_weekday_capacities(start, end):
+        segments = list(split_to_daily_segments('window', start, end))
+        capacities = {i: 0.0 for i in range(7)}
+        for _, date, seg_start, seg_end in segments:
+            dur = (seg_end - seg_start).total_seconds() / 3600.0
+            capacities[date.weekday()] += dur
+        return capacities
+        
+    weekday_capacities = get_weekday_capacities(start_date, max_date)
         
     # Helper to calculate percentages
     def get_seasonality_data(df_slice, is_nationwide=False):
         # Hourly distribution
         h_sum = df_slice.groupby('hour')['duration_seconds'].sum().reset_index()
         h_sum['hours'] = h_sum['duration_seconds'] / 3600.0
-        # Normalization: total capacity of each hour bin is num_days hours
-        h_sum['pct'] = (h_sum['hours'] / num_days) * 100.0
+        # Normalization: total capacity of each hour bin is exactly days_to_analyze hours
+        h_sum['pct'] = (h_sum['hours'] / days_to_analyze) * 100.0
         
         # Ensure all 24 hours are represented
         h_map = pd.DataFrame({'hour': range(24)})
@@ -317,8 +318,12 @@ def main():
         # Weekly distribution
         w_sum = df_slice.groupby('weekday')['duration_seconds'].sum().reset_index()
         w_sum['hours'] = w_sum['duration_seconds'] / 3600.0
-        # Normalization: total capacity of each weekday is weekday_counts[weekday] * 24 hours
-        w_sum['pct'] = w_sum.apply(lambda r: (r['hours'] / (weekday_counts[int(r['weekday'])] * 24.0)) * 100.0, axis=1)
+        # Normalization: total capacity of each weekday is weekday_capacities[weekday] hours
+        w_sum['pct'] = w_sum.apply(
+            lambda r: (r['hours'] / weekday_capacities[int(r['weekday'])]) * 100.0 
+            if weekday_capacities[int(r['weekday'])] > 0 else 0.0, 
+            axis=1
+        )
         
         # Ensure all 7 weekdays are represented
         w_map = pd.DataFrame({'weekday': range(7)})
