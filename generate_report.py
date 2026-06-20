@@ -18,6 +18,7 @@ Outputs are written in a modular structure to:
 """
 
 import os
+import json
 import time
 import argparse
 import pandas as pd
@@ -239,7 +240,6 @@ Make sure the JSON is valid and only output the raw JSON object. Do not wrap it 
             if response_text.endswith("```"):
                 response_text = response_text[:-3].strip()
                 
-        import json
         result = json.loads(response_text)
         if "general_overview" in result and "regional_overviews" in result:
             print("   [Gemini API] AI overview generated successfully.")
@@ -870,7 +870,6 @@ def main():
         daily_trends_json[oblast] = row.tolist()
     daily_trends_json['Nationwide'] = daily_union_grid.groupby('date')['union_hours'].mean().tolist()
 
-    import json
     summary_json_str = json.dumps(summary_data)
     seasonality_json_str = json.dumps(seasonality_json)
     daily_trends_json_str = json.dumps(daily_trends_json)
