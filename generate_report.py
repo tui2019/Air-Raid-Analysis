@@ -88,7 +88,7 @@ def split_to_hourly_segments(oblast, start, end):
 def get_ascii_sparkline(daily_hours):
     """
     Converts a daily hours list/series into an ASCII sparkline.
-    Key:  . = 0-3h, - = 3-6h, + = 6-12h, = = 12-18h, # = 18-24h
+    Key:  . = 0-3h, - = 3-6h, ~ = 6-12h, = = 12-18h, # = 18-24h
     """
     sparkline = []
     for h in daily_hours:
@@ -97,7 +97,7 @@ def get_ascii_sparkline(daily_hours):
         elif h <= 6.0:
             sparkline.append('-')
         elif h <= 12.0:
-            sparkline.append('+')
+            sparkline.append('~')
         elif h <= 18.0:
             sparkline.append('=')
         else:
@@ -618,7 +618,7 @@ def main():
     with open(spark_txt_path, 'w') as f:
         f.write(f"================================================================================\n")
         f.write(f"DAILY THREAT ACTIVITY TREND LINES (Last {days_to_analyze} Days)\n")
-        f.write(f"Key:  . = 0-3h, - = 3-6h, + = 6-12h, = = 12-18h, # = 18-24h active threat per day\n")
+        f.write(f"Key:  . = 0-3h, - = 3-6h, ~ = 6-12h, = = 12-18h, # = 18-24h active threat per day\n")
         f.write(f"================================================================================\n\n")
         f.write(f"{'Oblast (Region)':<30} | Daily Threat Profile (Timeline ->)\n")
         f.write("-" * 80 + "\n")
@@ -632,7 +632,7 @@ def main():
         f.write(f"siren warning time) for that region on that day:\n")
         f.write(f"  . (dot)            : 0 to 3 hours of active alerts.\n")
         f.write(f"  - (dash)           : 3 to 6 hours of active alerts.\n")
-        f.write(f"  + (plus)           : 6 to 12 hours of active alerts.\n")
+        f.write(f"  ~ (tilde)          : 6 to 12 hours of active alerts.\n")
         f.write(f"  = (equals)         : 12 to 18 hours of active alerts.\n")
         f.write(f"  # (hash/pound)     : 18 to 24 hours of active alerts (near-constant warning).\n")
         f.write(f"Timeline reads from left (oldest date) to right (most recent date).\n")
@@ -646,7 +646,7 @@ def main():
         f.write(f"**Key:**\n")
         f.write(f"* `.` = 0-3h active threat per day\n")
         f.write(f"* `-` = 3-6h active threat per day\n")
-        f.write(f"* `+` = 6-12h active threat per day\n")
+        f.write(f"* `~` = 6-12h active threat per day\n")
         f.write(f"* `=` = 12-18h active threat per day\n")
         f.write(f"* `#` = 18-24h active threat per day\n\n")
         f.write(f"| Oblast (Region) | Daily Threat Profile (Timeline $\\rightarrow$) |\n")
@@ -658,7 +658,7 @@ def main():
         f.write(f"Each character in the **Daily Threat Profile** represents a single 24-hour UTC calendar day, showing the total merged (\"Union\") threat duration for that region:\n")
         f.write(f"* **`.` (dot)**: 0 to 3 hours of active sirens.\n")
         f.write(f"* **`-` (dash)**: 3 to 6 hours of active sirens.\n")
-        f.write(f"* **`+` (plus)**: 6 to 12 hours of active sirens.\n")
+        f.write(f"* **`~` (tilde)**: 6 to 12 hours of active sirens.\n")
         f.write(f"* **`=` (equals)**: 12 to 18 hours of active sirens.\n")
         f.write(f"* **`#` (hash)**: 18 to 24 hours of active sirens (near-constant threat).\n\n")
         f.write(f"*The timeline is displayed chronologically from left (oldest date) to right (most recent date).*\n")
