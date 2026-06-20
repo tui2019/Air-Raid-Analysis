@@ -729,14 +729,14 @@ def main():
         }}
         body {{
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: #f8fafc;
-            color: #0f172a;
+            background-color: #1F2125;
+            color: #E2E8F0;
             margin: 0;
             padding: 0;
             overflow-x: hidden;
         }}
         .header {{
-            background-color: #1e293b;
+            background-color: #17181c;
             color: white;
             padding: 1.5rem 2rem;
             display: flex;
@@ -772,10 +772,9 @@ def main():
             }}
         }}
         .card {{
-            background-color: white;
+            background-color: #272a30;
             border-radius: 0.5rem;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+            border: 1px solid #383c45;
             padding: 1.5rem;
         }}
         .card-title {{
@@ -783,8 +782,8 @@ def main():
             font-weight: 600;
             margin-top: 0;
             margin-bottom: 1.25rem;
-            color: #1e293b;
-            border-bottom: 1px solid #f1f5f9;
+            color: #f1f5f9;
+            border-bottom: 1px solid #383c45;
             padding-bottom: 0.75rem;
         }}
         .table-container {{
@@ -799,30 +798,30 @@ def main():
             font-size: 0.875rem;
         }}
         th {{
-            background-color: #f8fafc;
-            color: #475569;
+            background-color: #1e2126;
+            color: #94a3b8;
             font-weight: 600;
             padding: 0.75rem 1rem;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid #383c45;
             position: sticky;
             top: 0;
             z-index: 10;
         }}
         td {{
             padding: 0.75rem 1rem;
-            border-bottom: 1px solid #f1f5f9;
-            color: #334155;
+            border-bottom: 1px solid #30343d;
+            color: #cbd5e1;
         }}
         tr.selected {{
-            background-color: #f0fdf4;
-            outline: 1px solid #bbf7d0;
+            background-color: #22372b;
+            outline: 1px solid #355f46;
         }}
         tr.clickable {{
             cursor: pointer;
             transition: background-color 0.15s ease;
         }}
         tr.clickable:hover {{
-            background-color: #f8fafc;
+            background-color: #2d3138;
         }}
         .controls-row {{
             display: flex;
@@ -838,23 +837,23 @@ def main():
             font-size: 0.75rem;
             font-weight: 600;
             text-transform: uppercase;
-            color: #64748b;
+            color: #94a3b8;
             margin-bottom: 0.375rem;
         }}
         select, input {{
             width: 100%;
             padding: 0.625rem;
-            border: 1px solid #cbd5e1;
+            border: 1px solid #383c45;
             border-radius: 0.375rem;
             font-size: 0.875rem;
-            color: #1e293b;
-            background-color: white;
+            color: #e2e8f0;
+            background-color: #1f2125;
             box-sizing: border-box;
             outline: none;
         }}
         select:focus, input:focus {{
             border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
         }}
         .chart-box {{
             height: 300px;
@@ -939,13 +938,13 @@ def main():
                 
                 <div class="chart-grid-seasonality">
                     <div>
-                        <h4 style="margin-top:0; margin-bottom: 0.5rem; font-size: 0.875rem; color: #475569;">Hourly active threat probability (UTC)</h4>
+                        <h4 style="margin-top:0; margin-bottom: 0.5rem; font-size: 0.875rem; color: #94a3b8;">Hourly active threat probability (UTC)</h4>
                         <div class="chart-box" style="height: 250px;">
                             <canvas id="diurnalChart"></canvas>
                         </div>
                     </div>
                     <div>
-                        <h4 style="margin-top:0; margin-bottom: 0.5rem; font-size: 0.875rem; color: #475569;">Weekly active threat probability</h4>
+                        <h4 style="margin-top:0; margin-bottom: 0.5rem; font-size: 0.875rem; color: #94a3b8;">Weekly active threat probability</h4>
                         <div class="chart-box" style="height: 250px;">
                             <canvas id="weeklyChart"></canvas>
                         </div>
@@ -965,6 +964,8 @@ def main():
         let diurnalChart, weeklyChart, timelineChart;
 
         function initCharts() {{
+            Chart.defaults.color = '#94a3b8';
+            Chart.defaults.scale.grid.color = '#383c45';
             const ctxDiurnal = document.getElementById('diurnalChart').getContext('2d');
             diurnalChart = new Chart(ctxDiurnal, {{
                 type: 'bar',
