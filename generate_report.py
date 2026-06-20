@@ -724,12 +724,16 @@ def main():
     <title>Ukraine Air Raid Alerts Analysis Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        * {{
+            box-sizing: border-box;
+        }}
         body {{
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             background-color: #f8fafc;
             color: #0f172a;
             margin: 0;
             padding: 0;
+            overflow-x: hidden;
         }}
         .header {{
             background-color: #1e293b;
@@ -758,6 +762,9 @@ def main():
             display: grid;
             grid-template-columns: 1fr;
             gap: 2rem;
+        }}
+        .container > div {{
+            min-width: 0;
         }}
         @media (min-width: 1024px) {{
             .container {{
@@ -858,6 +865,9 @@ def main():
             display: grid;
             grid-template-columns: 1fr;
             gap: 1.5rem;
+        }}
+        .chart-grid-seasonality > div {{
+            min-width: 0;
         }}
         @media (min-width: 768px) {{
             .chart-grid-seasonality {{
