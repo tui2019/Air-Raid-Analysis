@@ -1,0 +1,35 @@
+================================================================================
+UKRAINE AIR RAID ALERTS: REGIONAL COMPARISON REPORT
+Period: 2026-03-22 00:00:00 UTC to 2026-06-19 23:59:59 UTC (90 Days)
+================================================================================
+
+Oblast (Region)                | Alerts | Hours       | Days        | % Time Active
+------------------------------------------------------------------------------------
+Autonomous Republic of Crimea  | 1      |     2160.00 |      90d 0h |      100.00%
+Luhanska oblast                | 1      |     2160.00 |      90d 0h |      100.00%
+Dnipropetrovska oblast         | 3469   |     2150.81 |     89d 15h |       99.57%
+Donetska oblast                | 2288   |     1999.00 |      83d 7h |       92.55%
+Kharkivska oblast              | 4835   |     1832.68 |      76d 9h |       84.85%
+Zaporizka oblast               | 2790   |     1755.66 |      73d 4h |       81.28%
+Sumska oblast                  | 2384   |     1739.01 |     72d 11h |       80.51%
+Chernihivska oblast            | 1899   |     1497.97 |     62d 10h |       69.35%
+Poltavska oblast               | 1336   |      779.64 |     32d 12h |       36.09%
+Khersonska oblast              | 1048   |      487.86 |      20d 8h |       22.59%
+Mykolaivska oblast             | 1010   |      451.15 |     18d 19h |       20.89%
+Kyivska oblast                 | 1087   |      420.92 |     17d 13h |       19.49%
+Odeska oblast                  | 1541   |      392.47 |      16d 8h |       18.17%
+Kirovohradska oblast           | 884    |      328.91 |     13d 17h |       15.23%
+Cherkaska oblast               | 793    |      270.89 |      11d 7h |       12.54%
+Zhytomyrska oblast             | 398    |      237.64 |      9d 22h |       11.00%
+Vinnytska oblast               | 460    |      124.97 |       5d 5h |        5.79%
+Kyiv City                      | 138    |      110.92 |      4d 15h |        5.14%
+Rivnenska oblast               | 197    |      102.14 |       4d 6h |        4.73%
+Khmelnytska oblast             | 165    |       86.98 |      3d 15h |        4.03%
+Chernivetska oblast            | 114    |       55.16 |       2d 7h |        2.55%
+Ternopilska oblast             | 117    |       47.81 |       2d 0h |        2.21%
+Volynska oblast                | 140    |       42.48 |      1d 18h |        1.97%
+Ivano-Frankivska oblast        | 197    |       36.03 |      1d 12h |        1.67%
+Lvivska oblast                 | 225    |       31.78 |       1d 8h |        1.47%
+Zakarpatska oblast             | 193    |       24.68 |       1d 1h |        1.14%
+------------------------------------------------------------------------------------
+Total alert records processed (excl. permanent): 27710

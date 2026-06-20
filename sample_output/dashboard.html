@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ukraine Air Raid Alerts Analysis Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #1F2125;
+            color: #E2E8F0;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+        .header {
+            background-color: #17181c;
+            color: white;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 4px solid #ef4444;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+        }
+        .header-meta {
+            font-size: 0.875rem;
+            color: #94a3b8;
+            text-align: right;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+        .container > div {
+            min-width: 0;
+        }
+        @media (min-width: 1024px) {
+            .container {
+                grid-template-columns: 1.2fr 1.8fr;
+            }
+        }
+        .card {
+            background-color: #272a30;
+            border-radius: 0.5rem;
+            border: 1px solid #383c45;
+            padding: 1.5rem;
+        }
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 1.25rem;
+            color: #f1f5f9;
+            border-bottom: 1px solid #383c45;
+            padding-bottom: 0.75rem;
+        }
+        .table-container {
+            overflow-x: auto;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.875rem;
+        }
+        th {
+            background-color: #1e2126;
+            color: #94a3b8;
+            font-weight: 600;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #383c45;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #30343d;
+            color: #cbd5e1;
+        }
+        tr.selected {
+            background-color: #22372b;
+            outline: 1px solid #355f46;
+        }
+        tr.clickable {
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+        }
+        tr.clickable:hover {
+            background-color: #2d3138;
+        }
+        .controls-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            align-items: center;
+        }
+        .controls-row div {
+            flex: 1;
+        }
+        label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #94a3b8;
+            margin-bottom: 0.375rem;
+        }
+        select, input {
+            width: 100%;
+            padding: 0.625rem;
+            border: 1px solid #383c45;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            color: #e2e8f0;
+            background-color: #1f2125;
+            box-sizing: border-box;
+            outline: none;
+        }
+        select:focus, input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        .chart-box {
+            height: 300px;
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+        .chart-grid-seasonality {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+        .chart-grid-seasonality > div {
+            min-width: 0;
+        }
+        @media (min-width: 768px) {
+            .chart-grid-seasonality {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        #aiContent {
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-out, margin-top 0.4s ease-out, padding-top 0.4s ease-out;
+            line-height: 1.6;
+            color: #cbd5e1;
+            font-size: 0.95rem;
+            margin-top: 0;
+            border-top: 1px solid transparent;
+            padding-top: 0;
+        }
+        #aiContent.expanded {
+            max-height: 500px;
+            opacity: 1;
+            margin-top: 1rem;
+            border-top: 1px solid #383c45;
+            padding-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>UKRAINE AIR RAID ALERTS ANALYSIS DASHBOARD</h1>
+        </div>
+        <div class="header-meta">
+            <strong>Analysis Period:</strong> 2026-03-22 to 2026-06-19<br>
+            <strong>Window:</strong> 90 Days
+        </div>
+    </div>
+    
+    <div class="container">
+        
+    <div class="card" style="grid-column: 1 / -1;">
+        <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-bottom: none; margin-bottom: 0; padding-bottom: 0;" onclick="toggleAiOverview()">
+            <span style="display: flex; align-items: center; gap: 0.5rem; color: #f1f5f9;">
+                AI Overview (General Trends)
+            </span>
+            <svg id="aiToggleArrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.3s ease; transform: rotate(0deg); color: #94a3b8;">
+                <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+        </div>
+        <div id="aiContent">
+            The data reveals a stark bifurcation in threat levels, with regions bordering the frontlines experiencing near-constant air raid alerts, while western regions remain significantly less affected. Over the 90-day period, a general de-escalation in alert duration was observed across most of Ukraine, characterized by a notable downward trend in central and southern oblasts. However, specific areas such as Chernihivska, Kyivska, and Zaporizka oblasts bucked this trend by recording an increase in threat duration. Despite these localized increases, the overall national trend suggests a cooling of alert activity outside of the immediate combat zones.
+        </div>
+    </div>
+        
+        <!-- Left Column: Table and Monthly Trends -->
+        <div>
+            <div class="card">
+                <div class="card-title">Regional Overview (Click row to select)</div>
+                <div style="margin-bottom: 1rem;">
+                    <input type="text" id="tableSearch" placeholder="Search region...">
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Oblast (Region)</th>
+                                <th style="text-align: right;">Alerts</th>
+                                <th style="text-align: right;">Hours</th>
+                                <th style="text-align: right;">Days</th>
+                                <th style="text-align: right;">% Active</th>
+                            </tr>
+                        </thead>
+                        <tbody id="regionalTableBody">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            
+        <div class="card" style="margin-top: 2rem;">
+            <div class="card-title">Historical Monthly Threat Trends (Average Active Hours per Day)</div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Oblast (Region)</th>
+                            <th>2026-03</th> <th>2026-04</th> <th>2026-05</th> <th>2026-06</th>
+                        </tr>
+                    </thead>
+                    <tbody id="monthlyTableBody">
+        <tr class="clickable" data-region="Autonomous Republic of Crimea" onclick="selectRegion(this.dataset.region)"><td><strong>Autonomous Republic of Crimea</strong></td><td align="right">24.0h</td><td align="right">24.0h</td><td align="right">24.0h</td><td align="right">24.0h</td></tr><tr class="clickable" data-region="Luhanska oblast" onclick="selectRegion(this.dataset.region)"><td><strong>Luhanska oblast</strong></td><td align="right">24.0h</td><td align="right">24.0h</td><td align="right">24.0h</td><td align="right">24.0h</td></tr><tr class="clickable" data-region="Dnipropetrovska oblast" onclick="selectRegion(this.dataset.region)"><td><strong>Dnipropetrovska oblast</strong></td><td align="right">24.0h</td><td align="right">24.0h</td><td align="right">23.9h</td><td align="right">23.7h</td></tr><tr class="clickable" data-region="Donetska oblast" onclick="selectRegion(this.dataset.region)"><td><strong>Donetska oblast</strong></td><td align="right">23.1h</td><td align="right">21.6h</td><td align="right">22.6h</td><td align="right">22.0h</td></tr><tr class="clickable" data-region="Kharkivska oblast" onclick="selectRegion(this.dataset.region)"><td><strong>Kharkivska oblast</strong></td><td align="right">21.1h</td><td align="right">19.5h</td><td align="right">20.4h</td><td align="right">21.4h</td></tr><tr class="clickable" data-region="Zaporizka oblast" onclick="selectRegion(this.dataset.region)"><td><strong>Zaporizka oblast</strong></td><td align="right">19.0h</td><td align="right">18.9h</td><td align="right">19.2h</td><td align="right">21.4h</td></tr><tr class="clickable" data-region="Sumska oblast" onclick="selectRegion(this.dataset.region)"><td><strong>Sumska oblast</strong></td><td align="right">21.8h</td><td align="right">19.0h</td><td align="right">18.1h</td><td align="right">20.5h</td></tr><tr class="clickable" data-region="Chernihivska oblast" onclick="selectRegion(this.dataset.region)"><td><strong>Chernihivska oblast</strong></td><td align="right">17.0h</td><td align="right">14.6h</td><td align="right">16.9h</td><td align="right">19.3h</td></tr><tr class="clickable" data-region="Poltavska oblast" onclick="selectRegion(this.dataset.region)"><td><strong>Poltavska oblast</strong></td><td align="right">12.6h</td><td align="right">7.9h</td><td align="right">9.0h</td><td align="right">7.3h</td></tr><tr class="clickable" data-region="Kyivska oblast" onclick="selectRegion(this.dataset.region)"><td><strong>Kyivska oblast</strong></td><td align="right">4.5h</td><td align="right">2.9h</td><td align="right">6.1h</td><td align="right">5.2h</td></tr><tr class="clickable" data-region="Khersonska oblast" onclick="selectRegion(this.dataset.region)"><td><strong>Khersonska oblast</strong></td><td align="right">9.0h</td><td align="right">5.3h</td><td align="right">5.0h</td><td align="right">4.5h</td></tr><tr class="clickable" data-region="Mykolaivska oblast" onclick="selectRegion(this.dataset.region)"><td><strong>Mykolaivska oblast</strong></td><td align="right">8.2h</td><td align="right">5.0h</td><td align="right">4.5h</td><td align="right">4.2h</td></tr><tr class="clickable" data-region="Odeska oblast" onclick="selectRegion(this.dataset.region)"><td><strong>Odeska oblast</strong></td><td align="right">7.5h</td><td align="right">4.7h</td><td align="right">3.3h</td><td align="right">3.8h</td></tr><tr class="clickable" data-region="Zhytomyrska oblast" onclick="selectRegion(this.dataset.region)"><td><strong>Zhytomyrska oblast</strong></td><td align="right">3.3h</td><td align="right">1.4h</td><td align="right">3.3h</td><td align="right">3.1h</td></tr><tr class="clickable" data-region="Kirovohradska oblast" onclick="selectRegion(this.dataset.region)"><td><strong>Kirovohradska oblast</strong></td><td align="right">7.2h</td><td align="right">3.2h</td><td align="right">3.9h</td><td align="right">2.1h</td></tr><tr class="clickable" data-region="Cherkaska oblast" onclick="selectRegion(this.dataset.region)"><td><strong>Cherkaska oblast</strong></td><td align="right">4.5h</td><td align="right">2.8h</td><td align="right">3.5h</td><td align="right">1.7h</td></tr><tr class="clickable" data-region="Rivnenska oblast" onclick="selectRegion(this.dataset.region)"><td><strong>Rivnenska oblast</strong></td><td align="right">1.8h</td><td align="right">0.3h</td><td align="right">1.6h</td><td align="right">1.3h</td></tr><tr class="clickable" data-region="Kyiv City" onclick="selectRegion(this.dataset.region)"><td><strong>Kyiv City</strong></td><td align="right">1.6h</td><td align="right">0.8h</td><td align="right">1.6h</td><td align="right">1.0h</td></tr><tr class="clickable" data-region="Vinnytska oblast" onclick="selectRegion(this.dataset.region)"><td><strong>Vinnytska oblast</strong></td><td align="right">3.1h</td><td align="right">1.1h</td><td align="right">1.7h</td><td align="right">0.6h</td></tr><tr class="clickable" data-region="Khmelnytska oblast" onclick="selectRegion(this.dataset.region)"><td><strong>Khmelnytska oblast</strong></td><td align="right">2.1h</td><td align="right">0.5h</td><td align="right">1.4h</td><td align="right">0.4h</td></tr><tr class="clickable" data-region="Volynska oblast" onclick="selectRegion(this.dataset.region)"><td><strong>Volynska oblast</strong></td><td align="right">0.8h</td><td align="right">0.2h</td><td align="right">0.6h</td><td align="right">0.4h</td></tr><tr class="clickable" data-region="Chernivetska oblast" onclick="selectRegion(this.dataset.region)"><td><strong>Chernivetska oblast</strong></td><td align="right">1.5h</td><td align="right">0.4h</td><td align="right">0.7h</td><td align="right">0.3h</td></tr><tr class="clickable" data-region="Ternopilska oblast" onclick="selectRegion(this.dataset.region)"><td><strong>Ternopilska oblast</strong></td><td align="right">1.4h</td><td align="right">0.3h</td><td align="right">0.7h</td><td align="right">0.1h</td></tr><tr class="clickable" data-region="Lvivska oblast" onclick="selectRegion(this.dataset.region)"><td><strong>Lvivska oblast</strong></td><td align="right">0.9h</td><td align="right">0.2h</td><td align="right">0.5h</td><td align="right">0.0h</td></tr><tr class="clickable" data-region="Zakarpatska oblast" onclick="selectRegion(this.dataset.region)"><td><strong>Zakarpatska oblast</strong></td><td align="right">0.4h</td><td align="right">0.2h</td><td align="right">0.4h</td><td align="right">0.0h</td></tr><tr class="clickable" data-region="Ivano-Frankivska oblast" onclick="selectRegion(this.dataset.region)"><td><strong>Ivano-Frankivska oblast</strong></td><td align="right">0.9h</td><td align="right">0.3h</td><td align="right">0.6h</td><td align="right">0.0h</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        </div>
+        
+        <!-- Right Column: Interactive Charts -->
+        <div>
+            <div class="card" style="height: calc(100% - 3rem);">
+                <div class="card-title">
+                    Interactive Charts: <span id="regionTitle" style="color: #ef4444; margin-left: 0.5rem;">Nationwide</span>
+                </div>
+                
+                <div class="controls-row">
+                    <div>
+                        <label for="regionSelect">Select Region</label>
+                        <select id="regionSelect">
+                            <option value="Nationwide">Nationwide Average</option>
+                            <option value="Autonomous Republic of Crimea">Autonomous Republic of Crimea</option> <option value="Luhanska oblast">Luhanska oblast</option> <option value="Dnipropetrovska oblast">Dnipropetrovska oblast</option> <option value="Donetska oblast">Donetska oblast</option> <option value="Kharkivska oblast">Kharkivska oblast</option> <option value="Zaporizka oblast">Zaporizka oblast</option> <option value="Sumska oblast">Sumska oblast</option> <option value="Chernihivska oblast">Chernihivska oblast</option> <option value="Poltavska oblast">Poltavska oblast</option> <option value="Khersonska oblast">Khersonska oblast</option> <option value="Mykolaivska oblast">Mykolaivska oblast</option> <option value="Kyivska oblast">Kyivska oblast</option> <option value="Odeska oblast">Odeska oblast</option> <option value="Kirovohradska oblast">Kirovohradska oblast</option> <option value="Cherkaska oblast">Cherkaska oblast</option> <option value="Zhytomyrska oblast">Zhytomyrska oblast</option> <option value="Vinnytska oblast">Vinnytska oblast</option> <option value="Kyiv City">Kyiv City</option> <option value="Rivnenska oblast">Rivnenska oblast</option> <option value="Khmelnytska oblast">Khmelnytska oblast</option> <option value="Chernivetska oblast">Chernivetska oblast</option> <option value="Ternopilska oblast">Ternopilska oblast</option> <option value="Volynska oblast">Volynska oblast</option> <option value="Ivano-Frankivska oblast">Ivano-Frankivska oblast</option> <option value="Lvivska oblast">Lvivska oblast</option> <option value="Zakarpatska oblast">Zakarpatska oblast</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="regionalAiBlock" style="display: none; background-color: #1e2126; border: 1px solid #383c45; border-radius: 0.25rem; padding: 0.75rem 1rem; margin-bottom: 1.5rem; font-size: 0.875rem; line-height: 1.5; color: #cbd5e1;">
+                    <span style="font-weight: 600; color: #ef4444; display: block; margin-bottom: 0.25rem;">Regional AI Insight:</span>
+                    <span id="regionalAiText"></span>
+                </div>
+                
+                <div class="chart-box" style="height: 350px;">
+                    <canvas id="timelineChart"></canvas>
+                </div>
+                
+                <div class="chart-grid-seasonality">
+                    <div>
+                        <h4 style="margin-top:0; margin-bottom: 0.5rem; font-size: 0.875rem; color: #94a3b8;">Hourly active threat probability (UTC)</h4>
+                        <div class="chart-box" style="height: 250px;">
+                            <canvas id="diurnalChart"></canvas>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 style="margin-top:0; margin-bottom: 0.5rem; font-size: 0.875rem; color: #94a3b8;">Weekly active threat probability</h4>
+                        <div class="chart-box" style="height: 250px;">
+                            <canvas id="weeklyChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const summaryData = [{"oblast": "Autonomous Republic of Crimea", "alert_count": 1, "union_hours": 2159.9997221975, "union_days_str": "90d 0h", "pct_active": 99.99998713877315}, {"oblast": "Luhanska oblast", "alert_count": 1, "union_hours": 2159.9997221975, "union_days_str": "90d 0h", "pct_active": 99.99998713877315}, {"oblast": "Dnipropetrovska oblast", "alert_count": 3469, "union_hours": 2150.8097221975, "union_days_str": "89d 15h", "pct_active": 99.57452417581018}, {"oblast": "Donetska oblast", "alert_count": 2288, "union_hours": 1998.9974999766666, "union_days_str": "83d 7h", "pct_active": 92.54618055447531}, {"oblast": "Kharkivska oblast", "alert_count": 4835, "union_hours": 1832.681666645, "union_days_str": "76d 9h", "pct_active": 84.84637345578705}, {"oblast": "Zaporizka oblast", "alert_count": 2790, "union_hours": 1755.6649999830554, "union_days_str": "73d 4h", "pct_active": 81.28078703625256}, {"oblast": "Sumska oblast", "alert_count": 2384, "union_hours": 1739.0133333125, "union_days_str": "72d 11h", "pct_active": 80.50987654224538}, {"oblast": "Chernihivska oblast", "alert_count": 1899, "union_hours": 1497.9677777594443, "union_days_str": "62d 10h", "pct_active": 69.35036008145575}, {"oblast": "Poltavska oblast", "alert_count": 1336, "union_hours": 779.6394444355556, "union_days_str": "32d 12h", "pct_active": 36.094418723868316}, {"oblast": "Khersonska oblast", "alert_count": 1048, "union_hours": 487.8647222163889, "union_days_str": "20d 8h", "pct_active": 22.586329732240227}, {"oblast": "Mykolaivska oblast", "alert_count": 1010, "union_hours": 451.151111105, "union_days_str": "18d 19h", "pct_active": 20.886625514120368}, {"oblast": "Kyivska oblast", "alert_count": 1087, "union_hours": 420.91749999527775, "union_days_str": "17d 13h", "pct_active": 19.486921296077675}, {"oblast": "Odeska oblast", "alert_count": 1541, "union_hours": 392.46527777166665, "union_days_str": "16d 8h", "pct_active": 18.169688785725306}, {"oblast": "Kirovohradska oblast", "alert_count": 884, "union_hours": 328.90694444, "union_days_str": "13d 17h", "pct_active": 15.227173353703705}, {"oblast": "Cherkaska oblast", "alert_count": 793, "union_hours": 270.8855555525, "union_days_str": "11d 7h", "pct_active": 12.540997942245372}, {"oblast": "Zhytomyrska oblast", "alert_count": 398, "union_hours": 237.64083333055555, "union_days_str": "9d 22h", "pct_active": 11.001890431970164}, {"oblast": "Vinnytska oblast", "alert_count": 460, "union_hours": 124.9686111088889, "union_days_str": "5d 5h", "pct_active": 5.7855838476337444}, {"oblast": "Kyiv City", "alert_count": 138, "union_hours": 110.9230555536111, "union_days_str": "4d 15h", "pct_active": 5.135326646000514}, {"oblast": "Rivnenska oblast", "alert_count": 197, "union_hours": 102.14416666472222, "union_days_str": "4d 6h", "pct_active": 4.728896604848251}, {"oblast": "Khmelnytska oblast", "alert_count": 165, "union_hours": 86.98472222111111, "union_days_str": "3d 15h", "pct_active": 4.027070473199588}, {"oblast": "Chernivetska oblast", "alert_count": 114, "union_hours": 55.156666665833335, "union_days_str": "2d 7h", "pct_active": 2.553549382677469}, {"oblast": "Ternopilska oblast", "alert_count": 117, "union_hours": 47.809444444166665, "union_days_str": "2d 0h", "pct_active": 2.2134002057484565}, {"oblast": "Volynska oblast", "alert_count": 140, "union_hours": 42.476666666111115, "union_days_str": "1d 18h", "pct_active": 1.9665123456532922}, {"oblast": "Ivano-Frankivska oblast", "alert_count": 197, "union_hours": 36.02916666638889, "union_days_str": "1d 12h", "pct_active": 1.6680169752957819}, {"oblast": "Lvivska oblast", "alert_count": 225, "union_hours": 31.77916666638889, "union_days_str": "1d 8h", "pct_active": 1.4712577160365226}, {"oblast": "Zakarpatska oblast", "alert_count": 193, "union_hours": 24.680555555277778, "union_days_str": "1d 1h", "pct_active": 1.1426183127443414}];
+        const seasonalityData = {"Nationwide": {"hourly": [37.28116096866097, 38.076353276353274, 36.59406457739791, 33.789969135802465, 32.614719848053184, 32.53821225071225, 34.464078822412155, 35.28655033238366, 35.37331433998101, 33.7380460588794, 33.069052706552704, 32.60829772079772, 34.60270655270655, 33.32432336182336, 34.05039173789174, 32.53558879392212, 31.722483380816712, 31.237654320987655, 33.51451804368471, 36.55836894586895, 36.137143874643876, 35.778881766381765, 35.6846628679962, 35.38347578347578], "weekly": [33.536348756688824, 34.7541742004899, 37.32731002125166, 33.127797638998366, 33.917539237706904, 34.77621972974723, 33.49458621011811]}, "Autonomous Republic of Crimea": {"hourly": [100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 99.99969135802469], "weekly": [100.0000000011574, 100.0000000011574, 100.0000000011574, 100.0000000011574, 100.00000000106837, 100.00000000115739, 100.0000000011574]}, "Luhanska oblast": {"hourly": [100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 99.99969135802469], "weekly": [100.0000000011574, 100.0000000011574, 100.0000000011574, 100.0000000011574, 100.00000000106837, 100.00000000115739, 100.0000000011574]}, "Dnipropetrovska oblast": {"hourly": [100.0, 100.0, 100.0, 100.0, 100.0, 99.29567901234567, 98.65648148148148, 98.98364197530864, 100.0, 100.0, 98.94104938271605, 99.88333333333333, 100.0, 100.0, 100.0, 100.0, 99.52623456790123, 99.50740740740741, 99.20339506172839, 99.49197530864197, 99.37870370370369, 98.88888888888889, 98.88888888888889, 99.14290123456789], "weekly": [99.13408119772859, 99.83778490144041, 99.99020655386384, 100.0000000011574, 98.09241283261213, 100.00000000115739, 100.0000000011574]}, "Donetska oblast": {"hourly": [96.67499999999998, 98.78827160493827, 97.30771604938272, 94.14537037037037, 86.82222222222222, 87.53703703703704, 93.83734567901236, 97.08641975308642, 97.04074074074074, 94.66172839506173, 93.22469135802469, 93.37808641975307, 93.62808641975309, 94.49043209876542, 94.33209876543211, 87.89166666666668, 81.32808641975309, 75.2858024691358, 92.29567901234567, 96.46666666666665, 95.875, 93.90154320987654, 92.7074074074074, 92.40123456790124], "weekly": [91.14529914635406, 94.82122507232253, 94.88844373329196, 94.69115028599624, 88.5723723054088, 94.34953703812904, 89.4940349013207]}, "Kharkivska oblast": {"hourly": [90.59537037037036, 94.48333333333333, 86.42932098765432, 73.27314814814815, 71.53024691358024, 76.00061728395062, 88.29845679012345, 94.8070987654321, 96.6108024691358, 86.07314814814815, 81.87314814814815, 82.8564814814815, 87.46265432098765, 87.06327160493828, 84.85185185185185, 72.71604938271605, 73.43981481481481, 71.16296296296296, 86.71604938271605, 94.0324074074074, 93.11172839506173, 91.63148148148149, 86.83858024691358, 84.45493827160493], "weekly": [83.14040242261468, 87.91337250814001, 87.16372863348745, 87.53481125457438, 80.77224071688921, 84.62808642073257, 82.75525284996064]}, "Zaporizka oblast": {"hourly": [77.52993827160493, 87.65617283950617, 93.88333333333334, 89.38364197530863, 74.1317901234568, 71.08240740740742, 82.69135802469135, 97.1608024691358, 97.25925925925925, 89.41111111111111, 76.6922839506173, 68.54907407407408, 78.00339506172838, 82.41203703703704, 86.02561728395061, 74.17191358024692, 58.09197530864198, 60.523148148148145, 79.82037037037037, 95.87191358024693, 96.64197530864197, 82.32098765432099, 78.54783950617285, 72.87654320987654], "weekly": [76.14805911769047, 82.71572293543029, 86.9080306277865, 81.79780983000656, 83.82450483040485, 78.47183642066132, 78.88354700946]}, "Sumska oblast": {"hourly": [89.89999999999999, 89.4388888888889, 80.59722222222221, 67.45833333333333, 75.14722222222221, 75.95277777777778, 87.35740740740741, 82.58024691358024, 79.91265432098766, 77.50432098765432, 74.83734567901234, 74.22654320987655, 84.45277777777777, 81.7537037037037, 74.06018518518519, 74.89043209876543, 71.90092592592592, 73.48333333333333, 90.85, 90.53858024691357, 85.85987654320988, 86.50185185185187, 82.56512345679012, 80.46728395061729], "weekly": [82.01673789268715, 82.30884971605236, 84.67592592690596, 79.5130876077579, 79.43863910220117, 78.00617284040901, 77.41720085559687]}, "Chernihivska oblast": {"hourly": [70.83981481481482, 71.99907407407407, 69.97376543209877, 67.21543209876543, 69.22500000000001, 67.15833333333333, 72.86234567901235, 74.81851851851853, 70.62530864197531, 66.73641975308642, 64.59166666666667, 67.34444444444443, 70.82623456790124, 67.45123456790124, 68.0638888888889, 68.78271604938271, 67.80000000000001, 67.95432098765433, 72.03302469135802, 72.60462962962963, 70.57067901234568, 72.13518518518518, 67.64753086419752, 65.14907407407408], "weekly": [67.50347222300351, 73.77083333418716, 69.0098824794312, 66.95806624009121, 77.36580962138355, 68.70920138968413, 62.08600427422286]}, "Poltavska oblast": {"hourly": [42.946296296296296, 46.525000000000006, 40.0287037037037, 30.975308641975307, 27.761419753086418, 28.265740740740743, 32.47345679012346, 32.13333333333333, 32.85617283950617, 27.311728395061728, 30.812037037037037, 24.8929012345679, 28.60462962962963, 27.39135802469136, 34.36512345679012, 37.031481481481485, 37.16141975308641, 41.394753086419755, 38.19567901234567, 39.191049382716045, 47.13611111111111, 52.081790123456784, 47.77129629629629, 38.95925925925926], "weekly": [34.64503205168303, 31.93135683797641, 40.65811965859024, 32.683048433426706, 36.15183061989355, 44.798418210395035, 32.46269586932159]}, "Khersonska oblast": {"hourly": [22.392592592592592, 21.858024691358022, 19.034567901234567, 17.57901234567901, 16.125617283950618, 20.26604938271605, 23.164506172839506, 22.498456790123456, 21.400925925925925, 24.863580246913582, 24.975, 21.651234567901234, 22.54382716049383, 20.52438271604938, 23.86913580246914, 23.831481481481482, 23.695987654320987, 16.978395061728392, 20.96666666666667, 31.054938271604936, 28.58425925925926, 26.546913580246915, 21.183024691358025, 26.483333333333338], "weekly": [27.49243233650053, 22.899394587159623, 24.303240741022027, 20.37224002872582, 22.05878032322385, 19.259548611334022, 21.46278490053331]}, "Mykolaivska oblast": {"hourly": [23.39320987654321, 20.608024691358022, 16.06327160493827, 13.92253086419753, 17.79567901234568, 17.266358024691357, 20.389814814814816, 22.93641975308642, 22.272222222222222, 22.18179012345679, 18.482098765432102, 17.57901234567901, 16.28611111111111, 19.073456790123455, 20.929012345679013, 21.109876543209875, 19.87098765432099, 22.562345679012346, 21.880246913580248, 27.396913580246917, 24.910493827160494, 27.71265432098765, 20.639197530864198, 26.017283950617287], "weekly": [22.140046296552548, 19.70726495749305, 27.131766382080404, 20.232727920462093, 18.822488268085948, 18.830054012563615, 19.18384971532175]}, "Kyivska oblast": {"hourly": [24.062654320987654, 30.841358024691356, 31.165123456790123, 32.56111111111111, 29.92438271604938, 24.566666666666666, 16.71388888888889, 18.167283950617282, 16.55462962962963, 14.257407407407408, 11.968518518518518, 13.52530864197531, 15.909567901234567, 13.589506172839508, 15.664506172839507, 15.986728395061728, 11.620061728395061, 13.997839506172841, 18.379629629629633, 21.732716049382717, 18.670061728395062, 17.687654320987654, 22.330246913580247, 17.809259259259257], "weekly": [17.301994302194554, 19.731125356353722, 18.82238247885033, 16.34588675232594, 16.6061401409717, 27.521315586738282, 20.69764957288913]}, "Odeska oblast": {"hourly": [23.951234567901235, 21.202469135802467, 17.168518518518518, 12.529320987654321, 14.417592592592593, 18.584876543209873, 19.524074074074072, 15.943518518518518, 15.496913580246915, 15.695061728395062, 14.216666666666667, 12.806790123456791, 17.440123456790126, 11.195987654320987, 14.457407407407407, 17.246604938271606, 17.028395061728393, 17.619753086419752, 16.403703703703705, 14.679629629629629, 17.79074074074074, 27.13888888888889, 34.40030864197531, 29.13395061728395], "weekly": [18.18767806288857, 16.02768874662425, 23.529647436169768, 18.118767806477514, 19.775035412457896, 16.399016203893506, 15.013799857723628]}, "Kirovohradska oblast": {"hourly": [21.829629629629633, 18.464814814814815, 15.329320987654322, 12.946604938271605, 15.739197530864196, 16.432098765432098, 15.543518518518518, 13.353395061728396, 16.875, 11.62716049382716, 13.479320987654322, 14.217592592592593, 15.951543209876542, 11.658641975308642, 14.327777777777778, 13.195987654320987, 14.855555555555554, 12.810802469135801, 13.111111111111112, 16.30432098765432, 17.1858024691358, 18.55216049382716, 13.826234567901233, 17.834567901234568], "weekly": [12.817752849151203, 16.352475071414336, 22.76655982932333, 9.169426638282765, 14.404304135040052, 15.333815586597224, 15.75409544177778]}, "Cherkaska oblast": {"hourly": [17.40648148148148, 19.267592592592592, 16.932407407407407, 11.618518518518519, 9.933333333333334, 10.749382716049384, 13.836728395061728, 9.18179012345679, 9.778703703703703, 7.150308641975308, 9.881172839506174, 8.209259259259259, 11.443518518518518, 9.965123456790122, 15.342901234567902, 13.244135802469136, 11.411728395061727, 9.15648148148148, 7.61111111111111, 16.012037037037036, 17.177777777777777, 15.831790123456791, 14.760493827160495, 15.081172839506173], "weekly": [7.862802706643711, 12.215633903275288, 16.29246794890652, 10.29300213687127, 13.257312373104932, 16.617766203896036, 11.561609686743502]}, "Zhytomyrska oblast": {"hourly": [12.628086419753085, 17.694135802469134, 20.13888888888889, 22.17314814814815, 20.147222222222222, 14.940123456790126, 10.198456790123457, 9.933024691358025, 10.05, 10.968518518518518, 9.477469135802469, 8.085493827160493, 9.484876543209877, 7.926851851851851, 6.908641975308642, 7.811111111111112, 7.590123456790124, 4.154320987654321, 4.412037037037037, 7.909567901234568, 6.826543209876544, 8.491666666666667, 12.712037037037039, 13.383024691358026], "weekly": [9.529291310651603, 10.311965812085162, 14.025195869108195, 8.894319800672744, 8.109782861360557, 13.130401234719871, 13.176014957417456]}, "Vinnytska oblast": {"hourly": [11.080246913580247, 11.75246913580247, 9.306172839506173, 7.258950617283951, 8.633024691358026, 5.7895061728395065, 5.989506172839506, 6.073456790123457, 6.959876543209877, 4.243827160493828, 5.528086419753086, 6.770987654320987, 8.75679012345679, 3.6746913580246914, 2.5777777777777775, 2.623148148148148, 5.992901234567902, 4.500617283950617, 0.7098765432098765, 2.710185185185185, 1.151543209876543, 1.5395061728395063, 6.935802469135802, 8.295061728395062], "weekly": [4.006677350473724, 6.9943910257219795, 11.435185185317536, 2.877225783509085, 5.0456775692112865, 3.7059220679441265, 6.274038461611077]}, "Kyiv City": {"hourly": [11.352777777777776, 13.66141975308642, 6.747222222222223, 6.07283950617284, 4.734876543209877, 1.9537037037037037, 2.3808641975308644, 2.350925925925926, 3.2558641975308644, 2.395987654320988, 4.500925925925926, 5.342592592592593, 4.156172839506173, 3.0175925925925924, 4.575, 3.2111111111111112, 3.464197530864198, 3.897839506172839, 4.183641975308642, 6.38858024691358, 6.018827160493827, 4.064814814814815, 7.836419753086419, 7.683641975308642], "weekly": [4.241185897484985, 6.706107549935167, 5.223112535672987, 5.418536324849039, 3.4063420640873754, 6.971643518599207, 4.121616809164513]}, "Rivnenska oblast": {"hourly": [8.4679012345679, 5.262654320987654, 7.984876543209876, 4.203703703703703, 4.408333333333333, 7.118518518518519, 5.949074074074074, 5.305246913580247, 5.5589506172839505, 4.403086419753087, 4.283641975308642, 3.316975308641975, 5.665123456790123, 4.5814814814814815, 4.905555555555555, 4.394444444444445, 4.122222222222223, 2.77037037037037, 1.1996913580246915, 3.0595679012345682, 4.827469135802469, 1.913888888888889, 3.5654320987654318, 6.2253086419753085], "weekly": [4.698985042789429, 4.1327457265435585, 6.640402421729277, 1.4556623931792412, 2.954329553387647, 5.970196759328358, 7.345441595526612]}, "Khmelnytska oblast": {"hourly": [5.587654320987655, 7.106481481481482, 7.08425925925926, 3.7756172839506172, 0.8632716049382715, 2.433333333333333, 3.6583333333333337, 4.938888888888889, 6.650925925925925, 5.219753086419753, 5.490432098765432, 6.482098765432099, 6.709876543209877, 4.689506172839506, 3.2848765432098763, 1.2972222222222223, 3.8685185185185182, 2.638888888888889, 1.1277777777777778, 2.3796296296296293, 1.142283950617284, 0.4666666666666666, 4.50216049382716, 5.251234567901234], "weekly": [2.9043803419139573, 4.508547008599191, 8.422275641123122, 1.7145655270853715, 3.5591199778870077, 2.5353973765725546, 4.4304665242678025]}, "Chernivetska oblast": {"hourly": [5.443827160493828, 3.700308641975309, 4.560493827160494, 2.7108024691358024, 0.3194444444444444, 0.0, 0.6472222222222223, 2.97962962962963, 3.6790123456790123, 3.3811728395061733, 2.9879629629629627, 3.6790123456790123, 5.350617283950617, 3.7944444444444447, 2.6765432098765434, 0.933641975308642, 2.424382716049383, 1.8604938271604938, 0.08055555555555555, 1.9203703703703703, 1.0962962962962963, 0.4691358024691358, 2.726543209876543, 3.8632716049382716], "weekly": [1.950142450165021, 2.2516915954676566, 6.639957265034116, 0.6684472934550301, 1.335204180217417, 1.6656057098958208, 3.2954950142831563]}, "Ternopilska oblast": {"hourly": [2.85, 3.4185185185185185, 4.268518518518519, 2.680555555555556, 0.11265432098765432, 0.0, 0.09783950617283951, 2.7746913580246915, 1.5222222222222224, 3.1716049382716047, 4.010802469135802, 3.6938271604938273, 3.9512345679012344, 3.3333333333333335, 2.764506172839506, 1.1111111111111112, 2.4246913580246914, 2.2537037037037035, 0.5771604938271605, 2.360493827160494, 0.9685185185185186, 0.4768518518518518, 1.985185185185185, 2.31358024691358], "weekly": [0.7775106837696827, 2.8993945869281443, 6.126691595512505, 0.37713675214111714, 1.9628756792194029, 1.367862654336819, 1.9172898860620766]}, "Volynska oblast": {"hourly": [3.7666666666666666, 2.4126543209876545, 1.6632716049382716, 2.688888888888889, 0.21018518518518522, 0.6003086419753086, 0.8283950617283949, 1.1833333333333333, 2.4518518518518517, 1.7675925925925924, 2.8932098765432097, 3.2274691358024694, 4.0737654320987655, 2.759567901234568, 2.712654320987655, 2.2222222222222223, 2.252469135802469, 2.23641975308642, 0.0867283950617284, 1.9293209876543211, 1.1737654320987654, 0.47654320987654314, 1.3527777777777779, 2.2262345679012348], "weekly": [1.7386930199631434, 2.143429487204295, 4.037037037083762, 0.7733262108351614, 2.1058601370062386, 1.9970100308873109, 0.9725783475896043]}, "Ivano-Frankivska oblast": {"hourly": [2.0876543209876544, 1.297530864197531, 2.9132716049382714, 1.537037037037037, 0.0, 0.0, 0.0, 0.6697530864197531, 0.9660493827160493, 2.6938271604938273, 3.665123456790124, 3.015432098765432, 2.7117283950617286, 2.4546296296296295, 3.2916666666666665, 1.1111111111111112, 1.4290123456790125, 2.0712962962962966, 1.1870370370370371, 2.287654320987654, 1.1737654320987654, 0.4734567901234568, 1.3604938271604938, 1.6348765432098764], "weekly": [0.7739494302083879, 1.309383903149058, 4.902866809173554, 0.44800569801088325, 1.6428077304375392, 1.3090277777929284, 1.2624643874789994]}, "Lvivska oblast": {"hourly": [2.0645061728395064, 1.2814814814814814, 1.5336419753086419, 1.3950617283950617, 0.0, 0.0, 0.9669753086419753, 0.9114197530864198, 0.962962962962963, 0.7410493827160494, 1.6731481481481483, 3.4743827160493823, 3.3913580246913586, 2.3416666666666663, 3.1506172839506172, 1.1111111111111112, 2.0469135802469136, 1.7040123456790124, 0.07839506172839505, 1.9299382716049382, 1.087037037037037, 0.46851851851851856, 1.3586419753086418, 1.6373456790123457], "weekly": [1.014957264969012, 1.7367343305044314, 3.8762464387913025, 0.4177350427398776, 1.2937155392904771, 1.299864969150847, 0.6463675213750024]}, "Zakarpatska oblast": {"hourly": [2.458641975308642, 1.2645061728395062, 1.3317901234567902, 0.43425925925925923, 0.0, 0.0, 0.0, 0.6790123456790125, 0.9651234567901235, 0.7290123456790123, 1.3095679012345678, 1.6074074074074074, 2.8663580246913583, 1.2895061728395063, 2.1728395061728394, 0.0, 1.4379629629629629, 1.6537037037037037, 0.26790123456790127, 2.2645061728395066, 1.2064814814814817, 0.4780864197530864, 1.359567901234568, 1.646604938271605], "weekly": [0.7735042735132261, 0.38141025641467086, 3.040687321972515, 0.5677528490094201, 1.2984342044602792, 1.304012345694105, 0.6449430199504845]}};
+        const dailyTrendsData = {"Autonomous Republic of Crimea": [23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.99972222222222], "Cherkaska oblast": [5.213888888888889, 3.2305555555555556, 9.596666666666666, 2.6797222222222223, 1.8186111111111112, 0.15638888888888888, 4.059444444444445, 10.675277777777778, 2.4755555555555557, 5.5216666666666665, 9.579999999722222, 4.901944444166666, 12.608333333333333, 3.326111111111111, 0.8266666666666667, 1.7991666666666666, 1.9813888888888889, 0.0, 1.4858333333333333, 2.3155555555555556, 0.0, 0.0, 0.7627777777777778, 4.903055555277778, 11.336111110833333, 5.533611111111111, 1.7438888888888888, 2.2222222222222223, 0.30527777777777776, 3.626388888888889, 1.063611111111111, 0.2738888888888889, 1.6127777777777779, 5.1077777775, 4.498888888888889, 0.0, 0.0, 0.0, 1.791111111111111, 0.2425, 5.3, 8.008333333333333, 5.124722222222222, 2.3058333330555554, 1.9188888888888889, 0.2683333333333333, 2.3130555555555556, 1.6216666666666666, 0.0, 0.0, 0.0, 6.054722222222222, 14.1327777775, 4.618333333333333, 4.356388888888889, 16.19527777777778, 4.8424999997222224, 0.8127777777777778, 1.7319444444444445, 4.2775, 1.0069444444444444, 0.0, 7.593333333055555, 3.1625, 1.313611111111111, 1.4861111111111112, 1.8005555555555555, 1.183888888888889, 5.413055555555555, 1.0686111111111112, 0.5255555555555556, 4.766111110833333, 3.854722222222222, 2.4408333333333334, 2.5408333333333335, 1.3058333333333334, 0.8869444444444444, 1.5633333333333332, 0.6522222222222223, 0.0, 0.6247222222222222, 1.48, 0.9558333333333333, 0.0, 3.832499999722222, 2.7869444444444444, 0.0, 1.6269444444444445, 3.3758333333333335, 0.47805555555555557], "Chernihivska oblast": [14.883055555277778, 12.470555555555556, 18.984444444444446, 15.224999999722222, 17.672222221944445, 16.01888888888889, 12.792222221944444, 21.00638888861111, 20.049166666388892, 20.868055555277774, 17.434999999722223, 18.56555555527778, 20.924166666388885, 17.020833333333332, 13.014722222222222, 9.174722222222222, 12.716666666388889, 13.249444444166667, 11.581111111111111, 12.229444444166667, 2.7327777777777778, 1.841388888611111, 20.582777777500002, 10.785555555277778, 17.02999999972222, 17.393611110833334, 19.97749999972222, 17.242222221944445, 15.383055555277778, 16.579444444166665, 20.54138888861111, 17.76555555527778, 8.901388888888889, 19.146666666388885, 18.68138888888889, 9.390833333333333, 7.079444444166667, 16.998055555277777, 14.044444444166666, 18.917222221944442, 22.6552777775, 23.39611111083333, 16.959444444166667, 20.66999999972222, 14.564722222222223, 12.776388888888889, 7.650555555555556, 9.517222221944444, 1.571388888888889, 1.2641666666666667, 3.2047222219444444, 12.645277777777778, 22.56861111083333, 8.09, 18.06555555527778, 21.02638888888889, 22.38388888861111, 21.399722221944444, 19.948333333055558, 20.185, 23.801388888611108, 20.71638888861111, 20.441666666388887, 18.321666666388886, 21.565555555277776, 20.786111110833332, 15.951111110833333, 14.874444444166667, 21.399722221944444, 23.999999999722224, 22.33138888861111, 22.552777777499998, 22.456944444166666, 17.589444444166666, 21.834722221944446, 22.39749999972222, 22.36111111083333, 18.20583333305556, 22.549444444166664, 21.428055555277776, 17.9152777775, 20.081666666388887, 18.013333333333332, 16.61638888888889, 18.72249999972222, 12.732499999722222, 17.441388888888888, 13.575555555277777, 19.545277777499997, 20.319444444444443], "Chernivetska oblast": [0.0, 0.0, 4.723611111111111, 0.0, 0.0, 0.0, 0.35583333333333333, 6.231111111111111, 2.4163888888888887, 0.7802777777777777, 7.384166666666666, 0.0, 1.788888888888889, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.718888888888889, 0.0, 0.295, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.6091666666666666, 0.0, 0.0, 0.0, 0.0, 0.2791666666666667, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 8.191944444444445, 0.7797222222222222, 0.3461111111111111, 0.0, 0.0, 0.9755555555555555, 0.21555555555555556, 1.1075, 0.0, 0.0, 2.8319444441666666, 2.616388888888889, 0.0, 0.0, 2.3141666666666665, 0.9036111111111111, 1.7358333333333333, 0.0, 0.0, 1.8030555552777776, 1.3058333333333334, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.12305555555555556, 0.0, 0.0, 1.4344444441666666, 0.8894444444444445, 0.0, 0.0, 0.0, 0.0], "Dnipropetrovska oblast": [23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.49388888861111, 23.96944444416667, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.478333333055552, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.911111110833332, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.42249999972222, 23.999999999722224, 23.999999999722224, 21.90888888861111, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 18.625555555555554], "Donetska oblast": [23.676388888611115, 23.908333333055552, 23.999999999722224, 23.410833333055553, 23.999999999722224, 22.142777777499997, 23.80805555527778, 23.071111110833332, 22.8675, 20.45444444416667, 21.18722222194444, 23.999999999722224, 23.999999999722224, 23.999999999722224, 21.411666666388886, 20.818055555555556, 22.19999999972222, 23.999999999722224, 23.999999999722224, 23.34111111083333, 20.639166666388892, 8.377499999722222, 21.943888888611113, 20.38638888861111, 22.740277777499998, 22.199444444166666, 22.17888888861111, 23.81249999972222, 22.62499999972222, 21.783333333055552, 20.20749999972222, 22.674999999722225, 23.937222221944445, 22.487222221944442, 23.999999999722224, 16.448611111111113, 18.372777777499998, 23.999999999722224, 21.336666666388886, 19.73194444416667, 23.50638888861111, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 21.015, 14.43888888861111, 21.809444444166665, 15.492222221944445, 22.795833333055555, 21.638333333055552, 23.60888888861111, 22.981388888611107, 23.798055555277777, 23.999999999722224, 23.12472222194444, 23.288055555277776, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.899722221944447, 22.640555555277775, 22.50999999972222, 19.9552777775, 22.24972222194444, 22.94861111083333, 21.840833333055553, 23.999999999722224, 23.219166666388887, 23.999999999722224, 23.999999999722224, 23.84916666638889, 23.999999999722224, 23.999999999722224, 22.8752777775, 23.937499999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.744166666388892, 23.38916666638889, 23.02666666638889, 22.265277777499996, 23.999999999722224, 23.108333333055555, 15.86, 0.0], "Ivano-Frankivska oblast": [0.0, 0.0, 3.8608333333333333, 0.0, 0.0, 0.0, 0.3705555555555556, 2.6280555555555556, 2.414722222222222, 0.0, 2.7758333333333334, 0.0, 1.781388888888889, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.7766666666666666, 0.0, 0.30027777777777775, 0.0, 0.0, 0.0, 0.0, 1.6669444444444443, 0.0, 0.0, 0.9733333333333334, 0.0, 0.0, 0.0, 0.0, 0.29444444444444445, 1.0841666666666667, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 7.262777777777778, 0.0, 0.3486111111111111, 0.0, 0.0, 0.0, 0.22444444444444445, 1.3669444444444445, 0.0, 0.0, 2.4261111108333333, 1.3108333333333333, 0.0, 0.0, 1.4477777777777778, 0.9072222222222223, 1.6111111111111112, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.19611111111111112, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Kharkivska oblast": [20.568888888611113, 22.301388888611108, 22.75305555527778, 23.2827777775, 21.275277777499998, 18.81138888888889, 16.776944444166666, 23.454722221944447, 19.69194444416667, 22.520555555277777, 20.062222221944445, 23.639722221944446, 23.994444444166664, 23.84111111083333, 21.46361111083333, 18.772777777777776, 21.665833333055552, 22.99249999972222, 20.579722221944444, 12.304444444166666, 14.328888888611111, 13.7427777775, 21.289999999722223, 17.452222221944446, 19.314444444166664, 22.516111110833332, 19.73749999972222, 22.39249999972222, 19.18499999972222, 21.9277777775, 22.28999999972222, 22.299444444166664, 14.356944444166666, 19.66611111083333, 19.678888888611112, 9.1325, 12.7525, 17.818611110833334, 21.973611110833332, 22.55916666638889, 23.390555555277775, 22.758611110833332, 23.69972222194444, 21.89944444416667, 22.20888888861111, 22.809722221944448, 22.4575, 13.313611111111111, 14.948611110833333, 19.455555555277776, 15.479166666388888, 18.641944444166665, 22.566944444166666, 19.626944444166664, 20.456666666388887, 23.61888888861111, 21.51861111083333, 20.191944444166666, 20.33388888861111, 17.104444444444443, 20.583055555555557, 18.43888888861111, 22.1877777775, 22.906944444166665, 20.31694444416667, 20.44999999972222, 16.491944444166666, 20.863888888611108, 20.599166666388886, 21.043611110833332, 21.12416666638889, 22.507222221944442, 22.305833333055556, 21.64638888861111, 20.50111111083333, 22.298055555277777, 22.995277777500004, 20.853888888611113, 22.73749999972222, 23.392777777499997, 19.955277777499997, 22.850277777777777, 19.799722221944446, 19.157777777499998, 21.08999999972222, 19.529444444166664, 22.456111110833334, 21.45111111111111, 21.29888888888889, 19.198611111111113], "Khersonska oblast": [6.759722221944444, 11.985833333333334, 8.407777777777778, 0.6847222222222222, 3.303888888888889, 10.101666666388889, 12.131944444444445, 17.011666666666667, 10.116944444444444, 9.862777777777778, 13.616666666666667, 6.759444444444444, 10.598611111111111, 4.869166666666667, 2.7175, 9.26916666638889, 3.636388888888889, 0.0, 1.876388888611111, 3.964166666666667, 0.7772222222222223, 0.0, 1.1630555555555555, 6.664166666666667, 11.973611110833334, 7.513333333333334, 1.4766666666666666, 0.9311111108333333, 5.5975, 4.314166666666667, 1.656111111111111, 6.229166666388889, 9.7127777775, 11.089444444444444, 5.6777777775, 0.7430555555555556, 4.710833333333333, 6.345, 4.568611110833333, 9.123888888888889, 5.236944444444444, 8.54111111111111, 7.213888888611111, 4.168333333333333, 8.314166666666667, 4.889722222222222, 4.572777777777778, 1.0102777777777778, 0.0, 0.0, 0.18194444416666666, 5.714166666666666, 14.044444444166666, 6.783611110833333, 4.233888888611111, 9.395833333333334, 6.3372222222222225, 10.319999999722222, 4.743055555555555, 2.3961111111111113, 2.272222222222222, 3.7919444444444443, 6.7574999997222225, 5.788333333055555, 3.8144444444444443, 5.156944444444444, 5.411666666666667, 4.961111111111111, 4.253611111111111, 1.1511111111111112, 3.350277777777778, 12.458888888611112, 6.8077777775, 6.671944444444445, 3.0208333333333335, 5.284166666666667, 1.8777777777777778, 4.097777777777778, 10.029722222222222, 2.6525, 1.9072222222222222, 3.661111111111111, 6.424444444444444, 3.3569444444444443, 7.346944444166667, 3.2430555555555554, 1.4852777777777777, 3.4322222222222223, 0.0, 1.3575], "Khmelnytska oblast": [0.0, 0.0, 7.2844444444444445, 0.0, 0.0, 0.0, 0.3622222222222222, 8.185833333333333, 2.4122222222222223, 2.9747222222222223, 7.5055555555555555, 0.0, 2.4677777777777776, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.5694444444444446, 0.0, 0.30416666666666664, 0.0, 0.0, 0.0, 0.0, 1.5577777777777777, 0.0, 0.0, 1.6133333333333333, 0.0, 0.0, 0.0, 0.0, 0.2808333333333333, 4.084722222222222, 0.8886111111111111, 0.7975, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.2425, 8.564722222222223, 3.580277777777778, 2.1519444444444447, 0.0, 0.7702777774999999, 3.966111111111111, 0.22583333333333333, 1.8816666666666666, 0.0, 0.0, 4.4377777775, 2.61, 0.0, 0.0, 3.0141666666666667, 0.9072222222222223, 1.74, 0.0, 0.0, 1.8019444441666665, 1.3391666666666666, 0.0, 0.41194444444444445, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.16916666666666666, 0.35583333333333333, 0.0, 1.4594444441666665, 0.8813888888888889, 0.0, 1.1841666666666666, 0.0, 0.0], "Kirovohradska oblast": [9.206388888888888, 3.118888888611111, 14.778055555555556, 5.2572222222222225, 2.991388888888889, 0.6013888888888889, 7.428055555277778, 13.326666666666666, 6.792777777777777, 8.253611110833333, 13.211388888888889, 5.336666666388889, 11.84361111111111, 3.3272222222222223, 4.42, 1.4513888888888888, 1.7419444444444445, 0.0, 1.7922222222222222, 0.8441666666666666, 1.3733333333333333, 1.1527777774999999, 1.8966666666666667, 6.7627777775, 14.069166666388888, 2.3408333333333333, 0.7386111111111111, 0.0, 0.2947222222222222, 2.1772222222222224, 2.0025, 2.03, 1.7322222222222223, 4.7625, 4.151388888611111, 2.548611111111111, 0.2808333333333333, 1.5319444444444446, 2.1977777775, 0.7822222222222223, 5.6066666666666665, 7.73, 1.998888888888889, 1.4569444444444444, 3.315, 1.1369444444444445, 2.799722222222222, 4.200555555555556, 0.0, 0.0, 0.0, 4.751111111111111, 17.098055555277778, 4.161666666388888, 5.934722222222222, 10.838333333055555, 5.756111110833333, 6.622777777777777, 3.861111111111111, 5.844444444444444, 1.1063888888888889, 2.986666666666667, 6.219444444166666, 3.286388888888889, 1.3175, 1.4838888888888888, 1.9377777777777778, 1.5013888888888889, 3.4319444444444445, 1.5730555555555557, 1.9302777777777778, 8.421111110833333, 2.537777777777778, 1.5811111111111111, 0.8211111111111111, 2.113611111111111, 0.6769444444444445, 0.3111111111111111, 2.1933333333333334, 0.0, 2.6127777777777776, 2.013611111111111, 0.5208333333333334, 0.8436111111111111, 4.920833333055556, 4.2619444444444445, 0.0, 4.055, 1.2291666666666667, 1.356111111111111], "Kyiv City": [0.7297222222222223, 1.6622222222222223, 7.688055555555556, 0.5322222222222223, 0.0, 0.0, 0.4741666666666667, 2.3161111111111112, 2.457222222222222, 0.21222222222222223, 0.8694444444444445, 1.1872222222222222, 2.6577777777777776, 0.8775, 0.0, 0.305, 0.0, 0.0, 0.7655555555555555, 0.3536111111111111, 0.5580555555555555, 0.0, 0.42027777777777775, 0.22027777777777777, 2.886388888611111, 3.0383333333333336, 0.6341666666666667, 0.0, 0.47027777750000005, 1.943888888888889, 0.39111111111111113, 0.4425, 0.0, 0.6491666666666667, 3.0441666666666665, 0.0, 0.0, 0.8208333333333333, 0.9033333330555554, 1.005, 0.0, 6.1225, 0.6708333333333333, 0.4113888888888889, 2.116388888888889, 0.7961111111111111, 0.8819444444444444, 0.15444444444444444, 0.0, 0.0, 0.0, 2.2577777777777777, 5.756111110833333, 5.720833333333333, 3.138333333333333, 0.7630555555555556, 2.3383333333333334, 0.28944444444444445, 2.1830555555555557, 0.0, 0.3458333333333333, 0.0, 6.533333333055555, 2.936111111111111, 0.27694444444444444, 0.7541666666666667, 1.6552777777777778, 1.1727777777777777, 2.4919444444444445, 1.1841666666666666, 0.0, 2.433888888611111, 3.9277777777777776, 0.7947222222222222, 0.6075, 0.23444444444444446, 0.5213888888888889, 0.8194444444444444, 0.6538888888888889, 0.35138888888888886, 0.0, 0.2361111111111111, 0.3138888888888889, 0.0, 2.578611110833333, 2.3783333333333334, 0.0, 1.66, 1.9447222222222222, 0.0], "Kyivska oblast": [2.1330555555555555, 2.2152777777777777, 9.863888888888889, 2.301111111111111, 1.51, 0.21222222222222223, 2.7474999997222223, 13.3975, 8.059166666666666, 2.269722222222222, 6.845555555555555, 5.027222222222222, 9.289166666666667, 2.227222222222222, 0.9580555555555555, 1.6513888888888888, 1.5922222222222222, 0.0, 2.266388888888889, 1.9158333333333333, 1.083611111111111, 0.0, 0.4027777777777778, 0.445, 7.875555555277778, 4.464722222222222, 5.679166666666666, 1.3330555555555557, 0.636388888611111, 3.2819444444444446, 0.8008333333333333, 3.1591666666666667, 6.623055555555555, 7.300555555277778, 5.206111111111111, 1.3205555555555555, 0.0, 1.4297222222222221, 1.9241666663888888, 2.4980555555555557, 5.1597222219444445, 11.981666666666667, 5.796944444444445, 2.473888888611111, 2.3144444444444443, 2.5755555555555554, 0.8497222222222223, 0.15388888888888888, 0.0, 0.0, 0.1277777775, 6.385277777777778, 13.030833333055556, 7.256388888888889, 8.893333333333333, 14.534166666666666, 10.306111110833333, 10.448055555555555, 2.658611111111111, 2.4608333333333334, 1.443888888888889, 0.0, 13.123333333055555, 8.03666666638889, 7.654166666666667, 13.358888888888888, 6.6175, 1.836111111111111, 6.810833333333333, 12.73388888861111, 11.578333333333333, 9.164722221944444, 13.053055555555556, 8.195, 12.665833333333333, 2.390277777777778, 7.374722221944444, 4.9847222222222225, 5.243333333055555, 5.543055555555555, 0.6305555555555555, 0.4697222222222222, 2.1283333333333334, 6.916111111111111, 5.428333333055556, 3.2597222222222224, 1.8463888888888889, 3.11, 4.088055555555556, 1.8777777777777778], "Luhanska oblast": [23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.999999999722224, 23.99972222222222], "Lvivska oblast": [0.0, 0.0, 5.194166666666667, 0.0, 0.0, 0.0, 0.3527777777777778, 0.6963888888888888, 2.4008333333333334, 0.0, 2.5575, 0.0, 1.7808333333333333, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.7641666666666667, 0.0, 0.28888888888888886, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.9691666666666666, 0.0, 0.0, 0.0, 0.0, 0.2802777777777778, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.725555555555555, 0.0, 0.35305555555555557, 0.0, 0.0, 0.0, 0.22444444444444445, 0.5152777777777777, 0.0, 0.0, 2.4216666663888886, 1.3202777777777779, 0.0, 0.0, 2.531388888888889, 0.9030555555555555, 1.613611111111111, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.7658333333333334, 0.0, 0.0, 0.12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Mykolaivska oblast": [6.558611110833334, 8.4, 9.403611111111111, 4.6002777777777775, 2.2086111111111113, 4.146666666388889, 10.58166666638889, 10.786111111111111, 11.679444444166666, 13.6427777775, 12.638333333333334, 4.380277777777778, 10.3452777775, 4.846388888888889, 3.3519444441666666, 7.9130555552777775, 3.4455555555555555, 2.2827777777777776, 3.506666666666667, 3.2422222222222223, 1.1433333333333333, 0.0, 1.7036111111111112, 5.4161111108333335, 14.319166666388888, 4.926388888888889, 1.281111111111111, 0.681388888611111, 5.603888888888889, 2.076388888888889, 3.585277777777778, 5.996666666666667, 7.878055555277777, 9.1575, 5.159444444166667, 1.155, 3.151388888888889, 3.2688888888888887, 3.9808333330555556, 12.514444444444445, 3.8761111111111113, 8.991388888888888, 3.3472222222222223, 4.668333333333333, 3.1455555555555557, 6.952222222222222, 4.785833333333334, 1.1166666666666667, 0.0, 0.0, 0.33194444416666663, 4.315833333333333, 14.931944444166666, 7.131944444166667, 5.5988888886111114, 9.906944444166667, 8.984722222222222, 5.365277777777778, 2.314722222222222, 2.1886111111111113, 3.370833333333333, 4.2975, 6.752499999722222, 6.615555555555556, 2.7775, 3.9705555555555554, 4.253055555555555, 3.0366666666666666, 3.7169444444444446, 0.6444444444444445, 3.113611111111111, 9.183888888611111, 5.599166666666667, 6.561388888888889, 3.879166666666667, 3.1169444444444445, 1.8316666666666668, 4.076388888888889, 7.843333333333334, 1.7666666666666666, 1.936388888888889, 3.903888888888889, 4.688055555555556, 3.691388888888889, 6.260555555277778, 3.9827777777777778, 1.6119444444444444, 4.009444444444444, 1.6033333333333333, 4.142222222222222], "Odeska oblast": [6.8277777777777775, 9.98388888861111, 4.641388888888889, 4.658888888888889, 1.353888888888889, 2.5483333330555555, 10.300833333055555, 9.3675, 12.19638888861111, 13.552222221944444, 11.1727777775, 5.559999999722222, 8.56388888861111, 5.711666666666667, 6.097499999722222, 5.3675, 3.0661111108333334, 8.02, 8.351944444166666, 10.642222222222221, 2.8830555555555555, 0.3383333330555555, 2.8769444444444443, 5.240555555277778, 6.238611111111111, 6.964722222222222, 4.5313888888888885, 4.729166666666667, 2.421111111111111, 0.0, 1.6327777777777779, 1.5747222222222221, 3.4611111111111112, 4.809444444444445, 2.2005555552777776, 2.2911111111111113, 2.42, 5.4325, 5.491944444444444, 2.9269444444444446, 8.46861111111111, 1.7430555555555556, 0.6519444444444444, 1.3786111108333332, 4.776944444444444, 3.1772222222222224, 6.833888888888889, 1.3291666666666666, 0.0, 0.0, 0.0, 0.9683333333333334, 12.736388888611112, 7.390555555555555, 3.9838888886111112, 4.850555555555555, 5.963611111111111, 5.330555555555556, 1.4797222222222222, 0.6333333333333333, 0.09333333333333334, 0.2816666666666667, 4.056111110833333, 3.673888888888889, 1.583888888888889, 0.7516666666666667, 6.004444444444444, 5.327499999722222, 4.513055555277778, 1.5469444444444445, 4.034166666666667, 3.4755555555555557, 2.186111111111111, 6.073055555555555, 4.263055555277778, 4.202222222222222, 5.338333333333333, 5.0744444444444445, 10.450555555555555, 4.865, 6.134444444166666, 2.7936111111111113, 4.684166666666667, 3.868888888888889, 0.10166666666666667, 1.6816666666666666, 1.4130555555555555, 1.4966666666666666, 1.21, 3.14], "Poltavska oblast": [15.979722222222222, 8.252499999722222, 13.998611111111112, 8.840555555555556, 8.985833333055556, 13.15638888888889, 19.74972222194444, 12.719999999722223, 13.905555555555555, 10.080555555277778, 17.15416666638889, 23.104444444166667, 15.942222221944444, 14.477777777777778, 2.386111111111111, 5.098611111111111, 12.297222222222222, 11.961666666666666, 4.333888888888889, 2.8630555555555555, 0.9080555555555555, 0.8936111111111111, 4.106388888611111, 9.2727777775, 16.450555555277777, 9.5625, 6.2944444441666665, 13.420555555555556, 14.081111111111111, 6.3902777777777775, 3.944722222222222, 2.9611111111111112, 1.4013888888888888, 7.708888888611111, 5.9816666666666665, 1.33, 11.528888888888888, 1.2108333333333334, 7.034166666666667, 1.9019444444444444, 12.6275, 15.583055555555555, 10.925555555277779, 10.278611111111111, 2.9763888888888888, 7.949166666666667, 5.734444444444445, 3.1905555555555556, 0.4, 0.0, 0.0, 7.310555555555555, 12.374722221944443, 5.003055555555555, 7.963055555277777, 23.169166666388886, 15.738611110833332, 10.206388888888888, 11.186944444166667, 8.331666666666667, 6.129166666666666, 12.62638888861111, 16.49638888861111, 7.872222221944444, 12.97638888888889, 13.05638888861111, 10.759722222222223, 9.063055555277778, 9.954166666666667, 5.9327777775, 4.269444444444445, 14.885833333055556, 8.232499999722222, 8.331944444166666, 9.411111110833334, 8.587222222222222, 7.814999999722222, 8.115555555555556, 6.043888888888889, 5.011111111111111, 6.6161111111111115, 6.693888888888889, 4.68, 5.0852777775, 6.971666666388889, 4.4191666666666665, 1.0472222222222223, 8.087777777777777, 10.64638888888889, 7.199722222222222], "Rivnenska oblast": [0.0, 0.0, 5.46, 0.0, 0.0, 0.0, 3.815, 6.633333333333334, 2.423888888888889, 0.0, 1.9736111111111112, 0.0, 1.7797222222222222, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.9436111111111111, 0.0, 0.2972222222222222, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.4897222219444444, 2.3658333333333332, 0.0, 0.0, 0.0, 0.0, 1.6297222222222223, 2.680833333333333, 0.0, 0.7961111111111111, 0.0, 0.0, 1.275, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 8.887777777777778, 0.0, 1.8683333333333334, 0.0, 1.0886111108333332, 4.3469444444444445, 0.22083333333333333, 0.0, 0.0, 0.0, 2.4258333330555555, 2.61, 0.09472222194444445, 0.8441666666666666, 3.0, 0.9025, 1.7355555555555555, 8.363611111111112, 7.942222222222222, 3.134999999722222, 4.378055555555555, 3.4633333333333334, 1.8083333333333333, 0.0, 0.22388888861111111, 2.3833333333333333, 3.7808333333333333, 1.991111111111111, 0.0, 0.2011111111111111, 0.3661111111111111, 0.0, 1.4641666663888888, 0.8794444444444445, 0.0, 1.1747222222222222, 0.0, 0.0], "Sumska oblast": [21.62249999972222, 18.725277777499997, 23.676388888611115, 21.82888888888889, 21.161111110833332, 20.913333333333334, 21.787222221944443, 23.098333333055553, 23.32416666638889, 22.176111110833332, 23.56749999972222, 21.948333333055555, 23.252222221944443, 22.776666666388888, 19.92083333305556, 17.138333333333332, 22.50638888861111, 22.238611110833332, 21.556666666388892, 16.946111110833332, 12.833055555555555, 11.481111110833334, 22.798333333055552, 19.421666666388887, 19.481666666388886, 22.465833333055553, 18.30055555527778, 18.44638888861111, 20.57444444416667, 19.575555555277777, 19.874166666388888, 22.764444444444443, 11.004722221944444, 15.342222221944445, 18.129166666666666, 13.531388888611112, 17.47249999972222, 19.6252777775, 17.589999999722224, 16.989722221944444, 22.171944444166666, 23.157222222222224, 20.53638888861111, 20.103611110833334, 12.844722222222222, 20.138333333055556, 17.773055555555555, 6.750555555555556, 1.6958333333333333, 5.639166666388888, 9.696111110833334, 16.394166666388887, 21.29638888861111, 13.444722221944444, 15.721388888611111, 23.103611110833334, 21.5752777775, 22.533888888611113, 19.800555555277775, 20.528888888611114, 20.56, 21.445555555277775, 23.02861111083333, 19.581666666388887, 21.67555555527778, 20.37611111083333, 15.854999999722223, 20.54166666638889, 21.787222221944443, 21.65916666638889, 19.916944444166663, 22.89638888861111, 18.458333333055556, 18.9552777775, 18.194444444166667, 23.619444444166668, 21.479999999722224, 20.95, 21.11277777777778, 22.0977777775, 22.718888888611108, 21.628055555277776, 22.678055555277776, 16.560833333055555, 23.113611110833332, 18.83972222194444, 19.551944444166665, 17.224999999722222, 20.812499999722224, 18.919722222222223], "Ternopilska oblast": [0.0, 0.0, 7.0744444444444445, 0.0, 0.0, 0.0, 0.35583333333333333, 3.772777777777778, 2.4258333333333333, 0.8480555555555556, 5.320277777777778, 0.0, 1.7941666666666667, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.7647222222222222, 0.0, 0.2911111111111111, 0.0, 0.0, 0.0, 0.0, 0.4975, 0.0, 0.0, 1.1544444444444444, 0.0, 0.0, 0.0, 0.0, 0.26416666666666666, 2.12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 7.354444444444445, 0.0, 0.33944444444444444, 0.0, 0.0, 0.0, 0.22, 1.2466666666666666, 0.0, 0.0, 2.429166666388889, 2.2091666666666665, 0.0, 0.0, 2.7533333333333334, 0.9125, 1.5794444444444444, 0.0, 0.0, 0.0, 0.9036111111111111, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.1783333333333332, 0.0, 0.0], "Vinnytska oblast": [0.0, 0.7983333330555555, 9.139166666666666, 0.5108333333333334, 0.0, 0.0, 0.5791666663888889, 12.384444444444444, 3.4763888888888888, 3.928611111111111, 10.635555555555555, 1.2255555555555555, 5.998611111111111, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.7502777777777778, 0.5583333333333333, 7.184444444166666, 1.3933333333333333, 0.6116666666666667, 0.0, 0.30027777777777775, 0.0, 0.595, 0.5763888888888888, 0.0, 0.0, 2.1219444444444444, 0.0, 0.0, 0.0, 0.0, 0.24222222222222223, 3.0675, 0.0, 0.31055555555555553, 0.0, 0.22555555555555556, 0.0, 0.0, 0.6713888888888889, 0.0, 0.0, 0.0, 3.937222222222222, 11.1902777775, 5.030277777777778, 2.7558333333333334, 2.9783333333333335, 2.2394444441666668, 2.381388888888889, 1.2025, 2.9519444444444445, 0.0, 0.0, 4.652222221944444, 2.696388888888889, 0.0, 0.0, 1.3694444444444445, 0.9005555555555556, 2.2894444444444444, 0.3413888888888889, 0.0, 2.217222221944444, 2.236111111111111, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6477777777777778, 0.0, 0.0, 0.185, 0.34805555555555556, 0.0, 1.643888888611111, 2.2294444444444443, 0.0, 1.258888888888889, 0.0, 0.0], "Volynska oblast": [0.0, 0.0, 4.226111111111111, 0.0, 0.0, 0.0, 0.35333333333333333, 1.1019444444444444, 2.4297222222222223, 0.0, 1.521111111111111, 0.0, 1.7855555555555556, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.7647222222222222, 0.0, 0.2997222222222222, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.5247222222222223, 0.0, 0.0, 0.0, 0.0, 1.3058333333333334, 1.7113888888888888, 0.0, 0.0, 0.0, 0.0, 0.8447222222222223, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 6.706111111111111, 0.0, 1.1591666666666667, 0.0, 0.0, 0.0, 0.22277777777777777, 0.0, 0.0, 0.0, 2.428888888611111, 1.3072222222222223, 0.0, 0.0, 1.4458333333333333, 0.9072222222222223, 1.6144444444444443, 1.4444444444444444, 0.0, 0.5324999997222222, 0.9691666666666666, 1.3130555555555556, 0.0, 0.0, 0.0, 0.6252777777777778, 2.4625, 1.2694444444444444, 0.0, 0.19972222222222222, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Zakarpatska oblast": [0.0, 0.0, 0.9661111111111111, 0.0, 0.0, 0.0, 0.35805555555555557, 0.7055555555555556, 2.4133333333333336, 0.0, 1.7102777777777778, 0.0, 1.7886111111111112, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.7672222222222222, 0.0, 0.30277777777777776, 0.0, 0.0, 0.0, 0.0, 0.45805555555555555, 0.0, 0.0, 0.9672222222222222, 0.0, 0.0, 0.0, 0.0, 0.29333333333333333, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.403888888888889, 0.3463888888888889, 0.3525, 0.0, 0.0, 0.0, 0.2238888888888889, 0.7005555555555556, 0.0, 0.0, 2.4302777774999997, 1.3066666666666666, 0.0, 0.0, 1.4469444444444444, 0.9133333333333333, 1.6072222222222223, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.21833333333333332, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "Zaporizka oblast": [18.69388888888889, 19.301111110833332, 19.1452777775, 18.8425, 19.576944444444443, 15.259444444166666, 20.236944444166664, 21.655277777777776, 17.662777777777777, 19.933333333055558, 20.03638888861111, 15.006666666666666, 19.50722222222222, 16.209444444166667, 18.82499999972222, 20.98777777777778, 20.017777777499997, 21.023333333055557, 18.307222221944446, 16.758055555555554, 17.259444444444444, 13.056111110833333, 19.08499999972222, 17.10638888861111, 21.815833333055554, 18.06638888861111, 22.184722221944448, 23.00749999972222, 16.30888888861111, 20.05, 13.906666666388888, 21.23999999972222, 18.79388888888889, 22.0127777775, 19.122222221944444, 17.123611110833334, 16.272222221944446, 20.984166666388887, 23.044166666388886, 18.43388888861111, 22.502222221944443, 19.79, 21.378611110833337, 16.482777777777777, 19.06861111111111, 22.736944444166664, 21.226666666666667, 13.601111111111111, 10.391944444444444, 20.078611110833332, 8.762222221944445, 20.697777777777777, 21.599999999722222, 21.375555555277774, 20.767222221944444, 21.188333333055553, 22.569444444166663, 20.269444444444446, 19.17861111083333, 19.99416666666667, 20.488333333055554, 21.475277777499997, 20.459444444166664, 19.27611111111111, 18.98555555527778, 18.733333333333334, 16.365833333333335, 18.719166666388887, 22.195555555277775, 17.77416666638889, 15.873055555555556, 19.145833333055553, 22.4452777775, 20.91638888861111, 22.11611111111111, 23.22638888861111, 22.389999999722225, 20.3127777775, 18.8425, 23.785833333055557, 21.75472222194444, 22.095277777499998, 22.46361111083333, 18.16944444416667, 20.9652777775, 21.73472222194444, 23.06999999972222, 21.782777777499998, 21.003055555555555, 19.578611111111112], "Zhytomyrska oblast": [0.0, 0.4230555555555556, 9.765555555555556, 0.5622222222222222, 0.0, 0.0, 3.463611111111111, 13.554166666666667, 4.943333333333333, 0.0, 4.0875, 1.2236111111111112, 5.430555555555555, 0.93, 0.0, 0.4191666666666667, 0.0, 0.0, 0.835, 0.37972222222222224, 0.0, 0.0, 0.4022222222222222, 0.19444444444444445, 5.501666666388889, 1.76, 5.163611111111111, 0.0, 0.30527777777777776, 0.0, 0.3827777777777778, 2.71, 5.5247222222222225, 1.547499999722222, 3.202777777777778, 0.9947222222222222, 0.0, 0.0, 0.5644444444444444, 1.0305555555555554, 3.5844444441666665, 5.295, 2.343611111111111, 0.2325, 0.22111111111111112, 1.0308333333333333, 0.21861111111111112, 0.0, 0.0, 0.0, 0.0, 2.5744444444444445, 12.168055555277778, 5.901666666666666, 3.1366666666666667, 0.6047222222222223, 3.4033333330555555, 8.598888888888888, 1.24, 2.091111111111111, 0.0, 0.0, 7.4577777775, 3.7180555555555554, 1.6158333333333332, 5.599722222222222, 6.128333333333333, 1.5805555555555555, 2.306388888888889, 11.163055555277777, 11.097222222222221, 4.343611110833333, 8.883611111111112, 6.535, 9.643055555555556, 0.9613888888888888, 3.5911111108333333, 3.7258333333333336, 6.5247222222222225, 3.3116666666666665, 0.0, 0.0325, 1.9188888888888889, 2.1075, 1.9669444441666666, 2.2280555555555557, 0.0, 2.3794444444444443, 0.0, 0.8733333333333333], "Nationwide": [8.648215811869658, 8.414508546891025, 12.178141025566239, 7.892991452927351, 7.60991452982906, 7.541111111025641, 9.432350427200856, 12.683856837521367, 10.424433760598292, 9.610758546880342, 11.724925213557693, 8.994871794754273, 11.227809828952992, 8.324658119583335, 7.207446581100427, 7.3910042734508545, 7.648749999903846, 7.606474358888889, 7.43225427340812, 6.926912393087607, 5.712307692254274, 4.726292734935898, 7.3917307691346155, 7.570373931485043, 10.741805555373931, 8.543814102478633, 7.881271367425214, 7.7007158118589745, 7.542008546901709, 7.527938034113248, 7.0910897435042735, 8.032606837521367, 7.190010683675213, 8.587596153707265, 8.616677350320513, 5.692692307638889, 6.366143162318376, 7.364070512735044, 7.632510683621795, 7.904903846068377, 9.647499999893162, 9.999487179423078, 8.40584401698718, 7.786207264850427, 7.461976495673077, 7.898354700779914, 7.46529914525641, 5.733408119615385, 4.440256410202992, 5.394113247788462, 4.7378846152670935, 8.064882478568377, 14.085811965619657, 8.532724358867522, 8.727168803290597, 10.69121794861111, 9.685235042564102, 9.583995726410256, 8.03572649563034, 8.146410256356837, 7.584668803354701, 7.771549145202991, 10.907350427072648, 9.194722222115384, 8.10035256400641, 8.512232905897436, 8.481175213600427, 7.964198717841881, 9.205726495630342, 8.671741452873933, 8.580256410181624, 10.036335469861111, 9.533878205021368, 8.73341880332265, 8.752628205032051, 8.297596153760683, 8.283237179358975, 8.11442307684829, 9.171987179412394, 8.210245726410257, 7.646399572553419, 7.898162393087607, 7.926282051207266, 7.375512820427351, 8.628002136538463, 7.700886752051281, 7.1508974358226505, 7.838322649497863, 7.485277777724359, 6.348696581196581]};
+        const datesList = ["2026-03-22", "2026-03-23", "2026-03-24", "2026-03-25", "2026-03-26", "2026-03-27", "2026-03-28", "2026-03-29", "2026-03-30", "2026-03-31", "2026-04-01", "2026-04-02", "2026-04-03", "2026-04-04", "2026-04-05", "2026-04-06", "2026-04-07", "2026-04-08", "2026-04-09", "2026-04-10", "2026-04-11", "2026-04-12", "2026-04-13", "2026-04-14", "2026-04-15", "2026-04-16", "2026-04-17", "2026-04-18", "2026-04-19", "2026-04-20", "2026-04-21", "2026-04-22", "2026-04-23", "2026-04-24", "2026-04-25", "2026-04-26", "2026-04-27", "2026-04-28", "2026-04-29", "2026-04-30", "2026-05-01", "2026-05-02", "2026-05-03", "2026-05-04", "2026-05-05", "2026-05-06", "2026-05-07", "2026-05-08", "2026-05-09", "2026-05-10", "2026-05-11", "2026-05-12", "2026-05-13", "2026-05-14", "2026-05-15", "2026-05-16", "2026-05-17", "2026-05-18", "2026-05-19", "2026-05-20", "2026-05-21", "2026-05-22", "2026-05-23", "2026-05-24", "2026-05-25", "2026-05-26", "2026-05-27", "2026-05-28", "2026-05-29", "2026-05-30", "2026-05-31", "2026-06-01", "2026-06-02", "2026-06-03", "2026-06-04", "2026-06-05", "2026-06-06", "2026-06-07", "2026-06-08", "2026-06-09", "2026-06-10", "2026-06-11", "2026-06-12", "2026-06-13", "2026-06-14", "2026-06-15", "2026-06-16", "2026-06-17", "2026-06-18", "2026-06-19"];
+        const regionalAiData = {"Autonomous Republic of Crimea": "Alert duration remains at maximum capacity with no change over the observed period, indicating a constant state of threat.", "Luhanska oblast": "The region maintains a persistent, maximum-level alert state throughout the entire period.", "Dnipropetrovska oblast": "While remaining at nearly total active uptime, the region shows stable threat levels with only negligible fluctuations.", "Donetska oblast": "Despite being an extremely high-threat zone, the region experienced a moderate decrease in alert duration over the three-month period.", "Kharkivska oblast": "Alert duration has remained consistently high and stable, reflecting the region's continued status as a primary frontline target.", "Zaporizka oblast": "This region represents a notable anomaly, with a significant increase in alert duration suggesting an intensification of security risks.", "Sumska oblast": "The threat remains severe but shows a gradual, slight decrease in duration as the period progressed.", "Chernihivska oblast": "Contrary to the national trend of decrease, this region experienced a marked increase in alert frequency and duration.", "Poltavska oblast": "The region saw a significant reduction in alert duration, dropping to approximately half of its initial monthly average.", "Khersonska oblast": "Threat levels have declined sharply over the period, moving from high-frequency alerts to lower activity levels.", "Mykolaivska oblast": "The frequency and duration of alerts have effectively halved since March, marking a substantial reduction in direct threat.", "Kyivska oblast": "Despite the broader trend of decline in many regions, Kyivska oblast saw an increase in threat duration over the study period.", "Odeska oblast": "The region recorded a significant downward shift in alert activity, suggesting a reduction in the immediate air threat.", "Kirovohradska oblast": "A steady decline in active hours indicates a substantial easing of the alert load compared to the beginning of the period.", "Cherkaska oblast": "Threat levels have decreased significantly, indicating a major reduction in the number of alert-driven disruptions.", "Zhytomyrska oblast": "The region remains relatively stable with only a marginal adjustment in alert hours, maintaining a low-intensity threat profile.", "Vinnytska oblast": "The threat levels have dropped dramatically, showing a strong downward trend in alert duration.", "Kyiv City": "Air raid alert activity in the capital has decreased, reflecting a moderate improvement in the overall threat environment.", "Rivnenska oblast": "Alert duration has trended downward, indicating a continued reduction in regional security pressure.", "Khmelnytska oblast": "A clear decline in alert activity has been observed, moving from a low-moderate threat level to near-minimal.", "Chernivetska oblast": "The alert duration has dropped significantly, reaching minimal levels by the end of the observed period.", "Ternopilska oblast": "The threat has essentially dissipated, with alert durations falling to near-zero levels.", "Volynska oblast": "The threat remains at a very low, stable level with no significant variation over the months.", "Ivano-Frankivska oblast": "The region has seen a complete cessation of recorded alert activity by the end of the period.", "Lvivska oblast": "A steady decline in alert activity has resulted in the region reaching near-zero threat levels.", "Zakarpatska oblast": "The region continues to experience minimal alert activity with stable, very low duration throughout the period."};
+
+        function toggleAiOverview() {
+            var content = document.getElementById("aiContent");
+            var arrow = document.getElementById("aiToggleArrow");
+            content.classList.toggle("expanded");
+            if (content.classList.contains("expanded")) {
+                arrow.style.transform = "rotate(180deg)";
+            } else {
+                arrow.style.transform = "rotate(0deg)";
+            }
+        }
+
+        function selectRegion(region) {
+            document.getElementById('regionSelect').value = region;
+            updateCharts(region);
+        }
+
+        let currentRegion = 'Nationwide';
+        let diurnalChart, weeklyChart, timelineChart;
+
+        function initCharts() {
+            Chart.defaults.color = '#94a3b8';
+            Chart.defaults.scale.grid.color = '#383c45';
+            const ctxDiurnal = document.getElementById('diurnalChart').getContext('2d');
+            diurnalChart = new Chart(ctxDiurnal, {
+                type: 'bar',
+                data: {
+                    labels: Array.from({length: 24}, (_, i) => (i < 10 ? '0' + i : i) + ':00'),
+                    datasets: [{
+                        label: 'Active %',
+                        data: seasonalityData[currentRegion].hourly,
+                        backgroundColor: '#3b82f6',
+                        borderColor: '#2563eb',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: { callback: function(value) { return value + '%'; } }
+                        }
+                    }
+                }
+            });
+
+            const ctxWeekly = document.getElementById('weeklyChart').getContext('2d');
+            weeklyChart = new Chart(ctxWeekly, {
+                type: 'bar',
+                data: {
+                    labels: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                    datasets: [{
+                        label: 'Active %',
+                        data: seasonalityData[currentRegion].weekly,
+                        backgroundColor: '#10b981',
+                        borderColor: '#059669',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: { callback: function(value) { return value + '%'; } }
+                        }
+                    }
+                }
+            });
+
+            const ctxTimeline = document.getElementById('timelineChart').getContext('2d');
+            timelineChart = new Chart(ctxTimeline, {
+                type: 'line',
+                data: {
+                    labels: datesList,
+                    datasets: [{
+                        label: 'Active Hours',
+                        data: dailyTrendsData[currentRegion],
+                        backgroundColor: 'rgba(239, 68, 68, 0.05)',
+                        borderColor: '#ef4444',
+                        borderWidth: 2,
+                        fill: true,
+                        pointRadius: datesList.length > 60 ? 1 : 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 24,
+                            title: { display: true, text: 'Active Hours per Day' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateCharts(region) {
+            currentRegion = region;
+            document.getElementById('regionTitle').innerText = region === 'Nationwide' ? 'Nationwide Average' : region;
+            
+            // Update diurnal
+            diurnalChart.data.datasets[0].data = seasonalityData[region].hourly;
+            diurnalChart.update();
+
+            // Update weekly
+            weeklyChart.data.datasets[0].data = seasonalityData[region].weekly;
+            weeklyChart.update();
+
+            // Update timeline
+            timelineChart.data.datasets[0].label = region === 'Nationwide' ? 'Nationwide Avg Active Hours' : `${region} Active Hours`;
+            timelineChart.data.datasets[0].data = dailyTrendsData[region];
+            timelineChart.update();
+            
+            // Update regional AI overview
+            if (typeof regionalAiData !== 'undefined' && regionalAiData[region]) {
+                document.getElementById('regionalAiText').innerText = regionalAiData[region];
+                document.getElementById('regionalAiBlock').style.display = 'block';
+            } else {
+                document.getElementById('regionalAiBlock').style.display = 'none';
+            }
+            
+            // Highlight table row
+            document.querySelectorAll('#regionalTableBody tr').forEach(row => {
+                if (row.dataset.region === region) {
+                    row.classList.add('selected');
+                    row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                } else {
+                    row.classList.remove('selected');
+                }
+            });
+
+            // Highlight monthly table row
+            document.querySelectorAll('#monthlyTableBody tr').forEach(row => {
+                if (row.dataset.region === region) {
+                    row.classList.add('selected');
+                } else {
+                    row.classList.remove('selected');
+                }
+            });
+        }
+
+        function renderTable(filterText = '') {
+            const tbody = document.getElementById('regionalTableBody');
+            tbody.innerHTML = '';
+            
+            const filtered = summaryData.filter(row => 
+                row.oblast.toLowerCase().includes(filterText.toLowerCase())
+            );
+            
+            filtered.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.className = 'clickable' + (row.oblast === currentRegion ? ' selected' : '');
+                tr.dataset.region = row.oblast;
+                tr.onclick = () => {
+                    selectRegion(row.oblast);
+                };
+                
+                tr.innerHTML = '<td><strong>' + row.oblast + '</strong></td>' +
+                               '<td align="right">' + row.alert_count + '</td>' +
+                               '<td align="right">' + row.union_hours.toFixed(2) + '</td>' +
+                               '<td align="right">' + row.union_days_str + '</td>' +
+                               '<td align="right">' + row.pct_active.toFixed(2) + '%</td>';
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Setup Event Listeners
+        document.getElementById('regionSelect').addEventListener('change', (e) => {
+            updateCharts(e.target.value);
+        });
+
+        document.getElementById('tableSearch').addEventListener('input', (e) => {
+            renderTable(e.target.value);
+        });
+
+        // Initialize Page
+        initCharts();
+        renderTable();
+        updateCharts('Nationwide');
+    </script>
+</body>
+</html>
