@@ -1037,8 +1037,12 @@ def main():
                 options: {{
                     responsive: true,
                     maintainAspectRatio: false,
+                    interaction: {{
+                        mode: 'index',
+                        intersect: false
+                    }},
                     plugins: {{
-                        legend: {{ display: true, position: 'top' }}
+                        legend: {{ display: false }}
                     }},
                     scales: {{
                         y: {{
