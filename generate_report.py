@@ -145,7 +145,7 @@ def load_env():
                             val = val[1:-1]
                         os.environ[key] = val
 
-def generate_ai_overview(regional_stats_df, days_to_analyze):
+def generate_ai_overview(regional_stats_df, days_to_analyze, daily_union_grid_df=None):
     """
     Generates AI overview from regional stats using Gemini API.
     """
@@ -163,7 +163,27 @@ def generate_ai_overview(regional_stats_df, days_to_analyze):
     try:
         client = genai.Client(api_key=api_key)
         
-        # Prepare context data
+        # Prepare context data including monthly trends over time if data is available
+        monthly_trend_info = ""
+        if daily_union_grid_df is not None and not daily_union_grid_df.empty:
+            df_copy = daily_union_grid_df.copy()
+            df_copy['month'] = pd.to_datetime(df_copy['date']).dt.to_period('M')
+            monthly_totals = df_copy.groupby(['oblast', 'month'])['union_hours'].sum().reset_index()
+            monthly_pivot = monthly_totals.pivot(index='oblast', columns='month', values='union_hours').fillna(0.0) / 24.0
+            
+            trend_lines = []
+            for oblast, row in monthly_pivot.iterrows():
+                months = sorted(list(monthly_pivot.columns))
+                if len(months) >= 2:
+                    first_month_val = row[months[0]]
+                    last_month_val = row[months[-1]]
+                    diff = last_month_val - first_month_val
+                    direction = "increased" if diff > 0.05 else ("decreased" if diff < -0.05 else "remained stable")
+                    trend_lines.append(f"- {oblast}: Threat went from {first_month_val:.1f} days in {months[0]} to {last_month_val:.1f} days in {months[-1]} ({direction})")
+                else:
+                    trend_lines.append(f"- {oblast}: Threat was {row[months[0]]:.1f} days in {months[0]}")
+            monthly_trend_info = "Monthly trend over time (Threat Uptime in days):\n" + "\n".join(trend_lines)
+        
         table_rows = []
         for _, row in regional_stats_df.iterrows():
             table_rows.append(
@@ -173,18 +193,25 @@ def generate_ai_overview(regional_stats_df, days_to_analyze):
         data_summary = "\n".join(table_rows)
         
         prompt = f"""
-You are an expert data analyst. You are analyzing Ukraine air raid alerts duration data.
-Here is the regional summary data for the last {days_to_analyze} days:
+You are an expert data analyst. You are analyzing Ukraine air raid alerts duration data over a period of {days_to_analyze} days.
 
+Here is the regional summary data:
 {data_summary}
 
+{monthly_trend_info}
+
 Please generate an AI overview of this data.
+Instead of just repeating the raw numbers, focus on:
+1. Identifying high-level geographic/regional patterns (e.g. proximity to frontline vs western regions).
+2. Synthesizing the monthly progression—explaining clearly whether threat durations have gone up, down, or remained stable over time across the region groups.
+3. Highlighting notable anomalies or major shifts.
+
 Your response MUST be a JSON object with the following exact keys and structure:
 {{
-  "general_overview": "A 4-5 sentence summary of the general trends of the time period, including average numbers (e.g. average active percentage, average alert counts, or total active duration) and noting which regions are most/least affected.",
+  "general_overview": "A 4-5 sentence summary of the general trends of the time period. Discuss average active percentages, regional groupings, and explain how the threat levels developed or shifted (up/down/stable) over the months.",
   "regional_overviews": {{
-    "Oblast Name 1": "A 1-2 sentence quick summary of alert levels and durations for this specific region.",
-    "Oblast Name 2": "A 1-2 sentence quick summary of alert levels and durations for this specific region.",
+    "Oblast Name 1": "A 1-2 sentence quick overview focusing on the threat trend over time for this region (e.g., whether alert duration increased, decreased, or stayed stable, and what that means for active threat levels).",
+    "Oblast Name 2": "A 1-2 sentence quick overview focusing on the threat trend over time for this region (e.g., whether alert duration increased, decreased, or stayed stable, and what that means for active threat levels).",
     ...
   }}
 }}
@@ -369,7 +396,7 @@ def main():
     
     # Regional statistics comparison ready
     # Generate AI Overview if configured
-    ai_data = generate_ai_overview(regional_stats, days_to_analyze)
+    ai_data = generate_ai_overview(regional_stats, days_to_analyze, daily_union_grid)
     
     if ai_data:
         # Write TXT AI Overview
