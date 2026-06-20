@@ -624,7 +624,19 @@ def main():
         f.write("-" * 80 + "\n")
         for oblast, row in daily_pivot.iterrows():
             f.write(f"{oblast:<30} | {get_ascii_sparkline(row)}\n")
-        f.write("-" * 80 + "\n")
+        f.write("-" * 80 + "\n\n")
+        f.write(f"================================================================================\n")
+        f.write(f"EXPLANATION OF SPARKLINE SYMBOLS:\n")
+        f.write(f"Each character in the Daily Threat Profile timeline represents a single 24-hour\n")
+        f.write(f"UTC calendar day. The symbol indicates the total Union Duration (true active\n")
+        f.write(f"siren warning time) for that region on that day:\n")
+        f.write(f"  . (dot)            : 0 to 3 hours of active alerts.\n")
+        f.write(f"  _ (underscore)     : 3 to 6 hours of active alerts.\n")
+        f.write(f"  - (dash)           : 6 to 12 hours of active alerts.\n")
+        f.write(f"  = (equals)         : 12 to 18 hours of active alerts.\n")
+        f.write(f"  # (hash/pound)     : 18 to 24 hours of active alerts (near-constant warning).\n")
+        f.write(f"Timeline reads from left (oldest date) to right (most recent date).\n")
+        f.write(f"================================================================================\n")
 
     # MD Sparklines
     spark_md_path = os.path.join(MD_OUT_DIR, 'daily_trends_sparklines.md')
@@ -641,6 +653,15 @@ def main():
         f.write(f"|:---|:---|\n")
         for oblast, row in daily_pivot.iterrows():
             f.write(f"| {oblast} | `{get_ascii_sparkline(row)}` |\n")
+        f.write(f"\n---\n\n")
+        f.write(f"### Legend & Symbol Explanation\n")
+        f.write(f"Each character in the **Daily Threat Profile** represents a single 24-hour UTC calendar day, showing the total merged (\"Union\") threat duration for that region:\n")
+        f.write(f"* **`.` (dot)**: 0 to 3 hours of active sirens.\n")
+        f.write(f"* **`_` (underscore)**: 3 to 6 hours of active sirens.\n")
+        f.write(f"* **`-` (dash)**: 6 to 12 hours of active sirens.\n")
+        f.write(f"* **`=` (equals)**: 12 to 18 hours of active sirens.\n")
+        f.write(f"* **`#` (hash)**: 18 to 24 hours of active sirens (near-constant threat).\n\n")
+        f.write(f"*The timeline is displayed chronologically from left (oldest date) to right (most recent date).*\n")
             
     print(f"   Daily sparklines report saved.")
     
