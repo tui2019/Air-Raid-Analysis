@@ -1,6 +1,6 @@
 # Air Raid Analysis: Ukraine Air Alert Durations
 
-This repository contains a Python utility to analyze the durations of official air raid alerts in Ukraine. It retrieves and parses raw dataset records from the community-maintained Vadimkin dataset repository.
+This repository contains a Python utility to analyze the durations of official air raid alerts in Ukraine. It retrieves and parses raw dataset records from the community-maintained [Vadimkin dataset repository](https://github.com/Vadimkin/ukrainian-air-raid-sirens-dataset).
 
 ## How the Project Works
 
