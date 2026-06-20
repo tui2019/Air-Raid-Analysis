@@ -644,9 +644,483 @@ def main():
             
     print(f"   Daily sparklines report saved.")
     
+    # 8. Generate HTML Dashboard
+    print("8. Generating interactive HTML dashboard...")
+    summary_data = []
+    for _, row in regional_stats.iterrows():
+        summary_data.append({
+            'oblast': row['oblast'],
+            'alert_count': int(row['alert_count']),
+            'union_hours': float(row['union_hours']),
+            'union_days_str': format_days_to_dh(row['union_days']),
+            'pct_active': float(row['pct_active'])
+        })
+
+    seasonality_json = {}
+    seasonality_json['Nationwide'] = {
+        'hourly': h_nat['pct'].tolist(),
+        'weekly': w_nat['pct'].tolist()
+    }
+    for oblast in regional_stats['oblast']:
+        grp = hour_df[hour_df['oblast'] == oblast]
+        if not grp.empty:
+            h_reg, w_reg = get_seasonality_data(grp)
+            seasonality_json[oblast] = {
+                'hourly': h_reg['pct'].tolist(),
+                'weekly': w_reg['pct'].tolist()
+            }
+        else:
+            seasonality_json[oblast] = {
+                'hourly': [0.0] * 24,
+                'weekly': [0.0] * 7
+            }
+
+    daily_pivot = daily_union_grid.pivot(index='oblast', columns='date', values='union_hours').fillna(0.0)
+    dates_list = [str(d) for d in daily_pivot.columns]
+    daily_trends_json = {}
+    for oblast, row in daily_pivot.iterrows():
+        daily_trends_json[oblast] = row.tolist()
+    daily_trends_json['Nationwide'] = daily_union_grid.groupby('date')['union_hours'].mean().tolist()
+
+    import json
+    summary_json_str = json.dumps(summary_data)
+    seasonality_json_str = json.dumps(seasonality_json)
+    daily_trends_json_str = json.dumps(daily_trends_json)
+    dates_list_str = json.dumps(dates_list)
+
+    # Monthly trends if available
+    monthly_trends_html = ""
+    if days_to_analyze > 60:
+        monthly_trends_html = f"""
+        <div class="card" style="margin-top: 2rem;">
+            <div class="card-title">Historical Monthly Threat Trends (Union Days per Month)</div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Oblast (Region)</th>
+                            {" ".join(f"<th>{m}</th>" for m in monthly_pivot.columns)}
+                        </tr>
+                    </thead>
+                    <tbody>
+        """
+        for oblast, row in monthly_pivot.iterrows():
+            monthly_trends_html += f"<tr><td><strong>{oblast}</strong></td>"
+            for m in monthly_pivot.columns:
+                monthly_trends_html += f'<td align="right">{format_days_to_dh(row[m])}</td>'
+            monthly_trends_html += "</tr>"
+        monthly_trends_html += """
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        """
+
+    html_template = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ukraine Air Raid Alerts Analysis Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+            margin: 0;
+            padding: 0;
+        }}
+        .header {{
+            background-color: #1e293b;
+            color: white;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 4px solid #ef4444;
+        }}
+        .header h1 {{
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+        }}
+        .header-meta {{
+            font-size: 0.875rem;
+            color: #94a3b8;
+            text-align: right;
+        }}
+        .container {{
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }}
+        @media (min-width: 1024px) {{
+            .container {{
+                grid-template-columns: 1.2fr 1.8fr;
+            }}
+        }}
+        .card {{
+            background-color: white;
+            border-radius: 0.5rem;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+            padding: 1.5rem;
+        }}
+        .card-title {{
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 1.25rem;
+            color: #1e293b;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 0.75rem;
+        }}
+        .table-container {{
+            overflow-x: auto;
+            max-height: 600px;
+            overflow-y: auto;
+        }}
+        table {{
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.875rem;
+        }}
+        th {{
+            background-color: #f8fafc;
+            color: #475569;
+            font-weight: 600;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #e2e8f0;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }}
+        td {{
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #f1f5f9;
+            color: #334155;
+        }}
+        tr.selected {{
+            background-color: #f0fdf4;
+            outline: 1px solid #bbf7d0;
+        }}
+        tr.clickable {{
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+        }}
+        tr.clickable:hover {{
+            background-color: #f8fafc;
+        }}
+        .controls-row {{
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            align-items: center;
+        }}
+        .controls-row div {{
+            flex: 1;
+        }}
+        label {{
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #64748b;
+            margin-bottom: 0.375rem;
+        }}
+        select, input {{
+            width: 100%;
+            padding: 0.625rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            color: #1e293b;
+            background-color: white;
+            box-sizing: border-box;
+            outline: none;
+        }}
+        select:focus, input:focus {{
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }}
+        .chart-box {{
+            height: 300px;
+            position: relative;
+            margin-bottom: 1.5rem;
+        }}
+        .chart-grid-seasonality {{
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }}
+        @media (min-width: 768px) {{
+            .chart-grid-seasonality {{
+                grid-template-columns: 1fr 1fr;
+            }}
+        }}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>UKRAINE AIR RAID ALERTS ANALYSIS DASHBOARD</h1>
+        </div>
+        <div class="header-meta">
+            <strong>Analysis Period:</strong> {start_date.strftime('%Y-%m-%d')} to {max_date.strftime('%Y-%m-%d')}<br>
+            <strong>Window:</strong> {days_to_analyze} Days
+        </div>
+    </div>
+    
+    <div class="container">
+        <!-- Left Column: Table and Monthly Trends -->
+        <div>
+            <div class="card">
+                <div class="card-title">Regional Overview (Click row to select)</div>
+                <div style="margin-bottom: 1rem;">
+                    <input type="text" id="tableSearch" placeholder="Search region...">
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Oblast (Region)</th>
+                                <th style="text-align: right;">Alerts</th>
+                                <th style="text-align: right;">Hours</th>
+                                <th style="text-align: right;">Days</th>
+                                <th style="text-align: right;">% Active</th>
+                            </tr>
+                        </thead>
+                        <tbody id="regionalTableBody">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            {monthly_trends_html}
+        </div>
+        
+        <!-- Right Column: Interactive Charts -->
+        <div>
+            <div class="card" style="height: calc(100% - 3rem);">
+                <div class="card-title">
+                    Interactive Charts: <span id="regionTitle" style="color: #ef4444; margin-left: 0.5rem;">Nationwide</span>
+                </div>
+                
+                <div class="controls-row">
+                    <div>
+                        <label for="regionSelect">Select Region</label>
+                        <select id="regionSelect">
+                            <option value="Nationwide">Nationwide Average</option>
+                            {" ".join(f'<option value="{o}">{o}</option>' for o in regional_stats['oblast'])}
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="chart-box" style="height: 350px;">
+                    <canvas id="timelineChart"></canvas>
+                </div>
+                
+                <div class="chart-grid-seasonality">
+                    <div>
+                        <h4 style="margin-top:0; margin-bottom: 0.5rem; font-size: 0.875rem; color: #475569;">Hourly active threat probability (UTC)</h4>
+                        <div class="chart-box" style="height: 250px;">
+                            <canvas id="diurnalChart"></canvas>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 style="margin-top:0; margin-bottom: 0.5rem; font-size: 0.875rem; color: #475569;">Weekly active threat probability</h4>
+                        <div class="chart-box" style="height: 250px;">
+                            <canvas id="weeklyChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const summaryData = {summary_json_str};
+        const seasonalityData = {seasonality_json_str};
+        const dailyTrendsData = {daily_trends_json_str};
+        const datesList = {dates_list_str};
+
+        let currentRegion = 'Nationwide';
+        let diurnalChart, weeklyChart, timelineChart;
+
+        function initCharts() {{
+            const ctxDiurnal = document.getElementById('diurnalChart').getContext('2d');
+            diurnalChart = new Chart(ctxDiurnal, {{
+                type: 'bar',
+                data: {{
+                    labels: Array.from({{length: 24}}, (_, i) => (i < 10 ? '0' + i : i) + ':00'),
+                    datasets: [{{
+                        label: 'Active %',
+                        data: seasonalityData[currentRegion].hourly,
+                        backgroundColor: '#3b82f6',
+                        borderColor: '#2563eb',
+                        borderWidth: 1
+                    }}]
+                }},
+                options: {{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {{ legend: {{ display: false }} }},
+                    scales: {{
+                        y: {{
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {{ callback: function(value) {{ return value + '%'; }} }}
+                        }}
+                    }}
+                }}
+            }});
+
+            const ctxWeekly = document.getElementById('weeklyChart').getContext('2d');
+            weeklyChart = new Chart(ctxWeekly, {{
+                type: 'bar',
+                data: {{
+                    labels: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+                    datasets: [{{
+                        label: 'Active %',
+                        data: seasonalityData[currentRegion].weekly,
+                        backgroundColor: '#10b981',
+                        borderColor: '#059669',
+                        borderWidth: 1
+                    }}]
+                }},
+                options: {{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {{ legend: {{ display: false }} }},
+                    scales: {{
+                        y: {{
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {{ callback: function(value) {{ return value + '%'; }} }}
+                        }}
+                    }}
+                }}
+            }});
+
+            const ctxTimeline = document.getElementById('timelineChart').getContext('2d');
+            timelineChart = new Chart(ctxTimeline, {{
+                type: 'line',
+                data: {{
+                    labels: datesList,
+                    datasets: [{{
+                        label: 'Active Hours',
+                        data: dailyTrendsData[currentRegion],
+                        backgroundColor: 'rgba(239, 68, 68, 0.05)',
+                        borderColor: '#ef4444',
+                        borderWidth: 2,
+                        fill: true,
+                        pointRadius: datesList.length > 60 ? 1 : 3
+                    }}]
+                }},
+                options: {{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {{
+                        legend: {{ display: true, position: 'top' }}
+                    }},
+                    scales: {{
+                        y: {{
+                            beginAtZero: true,
+                            max: 24,
+                            title: {{ display: true, text: 'Active Hours per Day' }}
+                        }}
+                    }}
+                }}
+            }});
+        }}
+
+        function updateCharts(region) {{
+            currentRegion = region;
+            document.getElementById('regionTitle').innerText = region === 'Nationwide' ? 'Nationwide Average' : region;
+            
+            // Update diurnal
+            diurnalChart.data.datasets[0].data = seasonalityData[region].hourly;
+            diurnalChart.update();
+
+            // Update weekly
+            weeklyChart.data.datasets[0].data = seasonalityData[region].weekly;
+            weeklyChart.update();
+
+            // Update timeline
+            timelineChart.data.datasets[0].label = region === 'Nationwide' ? 'Nationwide Avg Active Hours' : `${{region}} Active Hours`;
+            timelineChart.data.datasets[0].data = dailyTrendsData[region];
+            timelineChart.update();
+            
+            // Highlight table row
+            document.querySelectorAll('#regionalTableBody tr').forEach(row => {{
+                if (row.dataset.region === region) {{
+                    row.classList.add('selected');
+                    row.scrollIntoView({{ behavior: 'smooth', block: 'nearest' }});
+                }} else {{
+                    row.classList.remove('selected');
+                }}
+            }});
+        }}
+
+        function renderTable(filterText = '') {{
+            const tbody = document.getElementById('regionalTableBody');
+            tbody.innerHTML = '';
+            
+            const filtered = summaryData.filter(row => 
+                row.oblast.toLowerCase().includes(filterText.toLowerCase())
+            );
+            
+            filtered.forEach(row => {{
+                const tr = document.createElement('tr');
+                tr.className = 'clickable' + (row.oblast === currentRegion ? ' selected' : '');
+                tr.dataset.region = row.oblast;
+                tr.onclick = () => {{
+                    document.getElementById('regionSelect').value = row.oblast;
+                    updateCharts(row.oblast);
+                }};
+                
+                tr.innerHTML = '<td><strong>' + row.oblast + '</strong></td>' +
+                               '<td align="right">' + row.alert_count + '</td>' +
+                               '<td align="right">' + row.union_hours.toFixed(2) + '</td>' +
+                               '<td align="right">' + row.union_days_str + '</td>' +
+                               '<td align="right">' + row.pct_active.toFixed(2) + '%</td>';
+                tbody.appendChild(tr);
+            }});
+        }}
+
+        // Setup Event Listeners
+        document.getElementById('regionSelect').addEventListener('change', (e) => {{
+            updateCharts(e.target.value);
+        }});
+
+        document.getElementById('tableSearch').addEventListener('input', (e) => {{
+            renderTable(e.target.value);
+        }});
+
+        // Initialize Page
+        initCharts();
+        renderTable();
+        updateCharts('Nationwide');
+    </script>
+</body>
+</html>
+"""
+
+    dashboard_path = os.path.join(BASE_DIR, 'output', 'dashboard.html')
+    with open(dashboard_path, 'w') as f:
+        f.write(html_template)
+    print(f"   Interactive HTML dashboard saved.")
+
     total_time = time.time() - total_start
     print(f"\n================================================================================")
-    print(f"SUCCESS: Data processed and structured reports saved in output/txt/, output/md/, and output/csv/")
+    print(f"SUCCESS: Data processed and structured reports saved in output/txt/, output/md/, output/csv/, and output/dashboard.html")
     print(f"Total processing time: {total_time:.4f} seconds.")
     print(f"================================================================================\n")
 
