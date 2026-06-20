@@ -316,7 +316,7 @@ def main():
     if missing_finished.any():
         df.loc[missing_finished, 'finished_at'] = max_date
         
-    start_date = max_date - timedelta(days=days_to_analyze)
+    start_date = (max_date + timedelta(seconds=1)) - timedelta(days=days_to_analyze)
     
     # Precise overlap filter
     recent_df = df[
@@ -401,7 +401,7 @@ def main():
     regional_stats['alert_count'] = regional_stats['alert_count'].fillna(0).astype(int)
     
     # Calculate % of period active
-    total_window_hours = (max_date - start_date).total_seconds() / 3600.0
+    total_window_hours = days_to_analyze * 24.0
     regional_stats['pct_active'] = (regional_stats['union_hours'] / total_window_hours) * 100.0
     
     # Sort descending
