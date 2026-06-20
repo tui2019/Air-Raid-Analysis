@@ -243,8 +243,8 @@ def main():
     union_totals = daily_union_grid.groupby('oblast')['union_hours'].sum().reset_index(name='union_hours')
     union_totals['union_days'] = union_totals['union_hours'] / 24.0
     
-    # Alert count (excluding injected permanent alert records)
-    alert_counts = recent_df[recent_df['source'] != 'official_permanent'].groupby('oblast').size().reset_index(name='alert_count')
+    # Alert count (including injected permanent alert records)
+    alert_counts = recent_df.groupby('oblast').size().reset_index(name='alert_count')
     
     # Merge stats together
     regional_stats = pd.DataFrame({'oblast': all_oblasts})

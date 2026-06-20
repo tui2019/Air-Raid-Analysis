@@ -191,8 +191,8 @@ def main():
     results = pd.merge(results, cumulative, on='oblast', how='left')
     results = pd.merge(results, union_df, on='oblast', how='left')
     
-    # Add count of alerts (excluding injected permanent alert records to prevent count inflation)
-    alert_counts = recent_df[recent_df['source'] != 'official_permanent'].groupby('oblast').size().reset_index(name='alert_count')
+    # Add count of alerts (including injected permanent alert records)
+    alert_counts = recent_df.groupby('oblast').size().reset_index(name='alert_count')
     results = pd.merge(results, alert_counts, on='oblast', how='left')
     
     # Fill NaN values for oblasts with 0 alerts in the last X days
