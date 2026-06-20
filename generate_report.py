@@ -124,6 +124,12 @@ def main():
     if days_to_analyze <= 0:
         raise ValueError("Days parameter must be a positive integer.")
         
+    # Delete old output directory if it exists to avoid mixing results
+    output_parent_dir = os.path.join(BASE_DIR, 'output')
+    if os.path.exists(output_parent_dir):
+        import shutil
+        shutil.rmtree(output_parent_dir)
+        
     os.makedirs(TXT_OUT_DIR, exist_ok=True)
     os.makedirs(CSV_OUT_DIR, exist_ok=True)
     

@@ -68,6 +68,13 @@ def main():
     if days_to_analyze <= 0:
         raise ValueError("The number of days must be a positive integer.")
         
+    # Delete old output files if they exist to avoid mixing results
+    csv_file = os.path.join(BASE_DIR, 'oblast_duration_analysis.csv')
+    txt_file = os.path.join(BASE_DIR, 'analysis_summary.txt')
+    for f in [csv_file, txt_file]:
+        if os.path.exists(f):
+            os.remove(f)
+            
     total_start = time.time()
     
     print(f"1. Loading dataset from remote URL:\n   {DATA_URL}")
