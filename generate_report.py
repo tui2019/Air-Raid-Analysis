@@ -425,7 +425,7 @@ def main():
         # Write MD AI Overview
         ai_md_path = os.path.join(MD_OUT_DIR, 'ai_overview.md')
         with open(ai_md_path, 'w', encoding='utf-8') as f:
-            f.write("# 🤖 Ukraine Air Raid Alerts: AI Analysis Overview\n\n")
+            f.write("# Ukraine Air Raid Alerts: AI Analysis Overview\n\n")
             f.write("## 📋 General Trends Summary\n")
             f.write(f"{ai_data['general_overview']}\n\n")
             f.write("---\n\n")
@@ -717,7 +717,7 @@ def main():
                 indicator = get_ascii_indicator(row['pct']/100.0)
                 f.write(f"| {weekday_names[int(row['weekday'])]} | {row['pct']:.2f}% | `{indicator}`{label} |\n")
             if ai_data and 'regional_overviews' in ai_data and oblast in ai_data['regional_overviews']:
-                f.write(f"\n**🤖 AI Overview Insight:** {ai_data['regional_overviews'][oblast]}\n")
+                f.write(f"\n**AI Overview Insight:** {ai_data['regional_overviews'][oblast]}\n")
             f.write("\n---\n\n")
             
     print(f"   Seasonality reports saved.")
@@ -883,13 +883,13 @@ def main():
     <div class="card" style="grid-column: 1 / -1;">
         <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-bottom: none; margin-bottom: 0; padding-bottom: 0;" onclick="toggleAiOverview()">
             <span style="display: flex; align-items: center; gap: 0.5rem; color: #f1f5f9;">
-                <span>🤖</span> AI Overview (General Trends)
+                AI Overview (General Trends)
             </span>
             <svg id="aiToggleArrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.3s ease; transform: rotate(0deg); color: #94a3b8;">
                 <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
         </div>
-        <div id="aiContent" style="display: none; margin-top: 1rem; border-top: 1px solid #383c45; padding-top: 1rem; line-height: 1.6; color: #cbd5e1; font-size: 0.95rem;">
+        <div id="aiContent">
             {ai_data['general_overview']}
         </div>
     </div>
@@ -1081,6 +1081,25 @@ def main():
                 grid-template-columns: 1fr 1fr;
             }}
         }}
+        #aiContent {{
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-out, margin-top 0.4s ease-out, padding-top 0.4s ease-out;
+            line-height: 1.6;
+            color: #cbd5e1;
+            font-size: 0.95rem;
+            margin-top: 0;
+            border-top: 1px solid transparent;
+            padding-top: 0;
+        }}
+        #aiContent.expanded {{
+            max-height: 500px;
+            opacity: 1;
+            margin-top: 1rem;
+            border-top: 1px solid #383c45;
+            padding-top: 1rem;
+        }}
     </style>
 </head>
 <body>
@@ -1142,7 +1161,7 @@ def main():
                 </div>
                 
                 <div id="regionalAiBlock" style="display: none; background-color: #1e2126; border: 1px solid #383c45; border-radius: 0.25rem; padding: 0.75rem 1rem; margin-bottom: 1.5rem; font-size: 0.875rem; line-height: 1.5; color: #cbd5e1;">
-                    <span style="font-weight: 600; color: #ef4444; display: block; margin-bottom: 0.25rem;">🤖 Regional AI Insight:</span>
+                    <span style="font-weight: 600; color: #ef4444; display: block; margin-bottom: 0.25rem;">Regional AI Insight:</span>
                     <span id="regionalAiText"></span>
                 </div>
                 
@@ -1178,11 +1197,10 @@ def main():
         function toggleAiOverview() {{
             var content = document.getElementById("aiContent");
             var arrow = document.getElementById("aiToggleArrow");
-            if (content.style.display === "none") {{
-                content.style.display = "block";
+            content.classList.toggle("expanded");
+            if (content.classList.contains("expanded")) {{
                 arrow.style.transform = "rotate(180deg)";
             }} else {{
-                content.style.display = "none";
                 arrow.style.transform = "rotate(0deg)";
             }}
         }}
