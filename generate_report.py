@@ -306,6 +306,11 @@ def main():
     max_finished = df['finished_at'].dropna().max()
     max_date = max(max_started, max_finished) if pd.notna(max_finished) else max_started
     
+    # Exclude the latest calendar day to avoid incomplete/partial daily data.
+    # Set max_date to the end of the previous calendar day (23:59:59 UTC).
+    if pd.notna(max_date):
+        max_date = max_date.tz_convert('UTC').normalize() - timedelta(seconds=1)
+    
     # Fill unresolved alerts with max_date
     missing_finished = df['finished_at'].isna()
     if missing_finished.any():
