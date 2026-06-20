@@ -233,12 +233,9 @@ def main():
     print("4. Calculating regional comparison stats...")
     t0 = time.time()
     
-    # Union total duration per region
+    # Union total duration per region (in hours and days)
     union_totals = daily_union_grid.groupby('oblast')['union_hours'].sum().reset_index(name='union_hours')
-    
-    # Cumulative totals
-    cumulative = recent_df.groupby('oblast')['duration'].sum().reset_index()
-    cumulative['cumulative_days'] = cumulative['duration'].dt.total_seconds() / 86400.0
+    union_totals['union_days'] = union_totals['union_hours'] / 24.0
     
     # Alert count (excluding injected permanent alert records)
     alert_counts = recent_df[recent_df['source'] != 'official_permanent'].groupby('oblast').size().reset_index(name='alert_count')
@@ -246,12 +243,11 @@ def main():
     # Merge stats together
     regional_stats = pd.DataFrame({'oblast': all_oblasts})
     regional_stats = pd.merge(regional_stats, union_totals, on='oblast', how='left')
-    regional_stats = pd.merge(regional_stats, cumulative[['oblast', 'cumulative_days']], on='oblast', how='left')
     regional_stats = pd.merge(regional_stats, alert_counts, on='oblast', how='left')
     
     # Fill missing values
     regional_stats['union_hours'] = regional_stats['union_hours'].fillna(0.0)
-    regional_stats['cumulative_days'] = regional_stats['cumulative_days'].fillna(0.0)
+    regional_stats['union_days'] = regional_stats['union_days'].fillna(0.0)
     regional_stats['alert_count'] = regional_stats['alert_count'].fillna(0).astype(int)
     
     # Calculate % of period active
@@ -272,11 +268,11 @@ def main():
         f.write(f"UKRAINE AIR RAID ALERTS: REGIONAL COMPARISON REPORT\n")
         f.write(f"Period: {start_date.strftime('%Y-%m-%d %H:%M:%S UTC')} to {max_date.strftime('%Y-%m-%d %H:%M:%S UTC')} ({days_to_analyze} Days)\n")
         f.write(f"================================================================================\n\n")
-        f.write(f"{'Oblast (Region)':<30} | {'Alerts':<6} | {'Union (Hrs)':<12} | {'Cumulative (Days)':<17} | {'% Time Active':<13}\n")
-        f.write("-" * 92 + "\n")
+        f.write(f"{'Oblast (Region)':<30} | {'Alerts':<6} | {'Hours':<11} | {'Days':<11} | {'% Time Active':<13}\n")
+        f.write("-" * 84 + "\n")
         for _, row in regional_stats.iterrows():
-            f.write(f"{row['oblast']:<30} | {row['alert_count']:<6} | {row['union_hours']:11.2f} | {row['cumulative_days']:17.2f} | {row['pct_active']:11.2f}%\n")
-        f.write("-" * 92 + "\n")
+            f.write(f"{row['oblast']:<30} | {row['alert_count']:<6} | {row['union_hours']:11.2f} | {row['union_days']:11.2f} | {row['pct_active']:11.2f}%\n")
+        f.write("-" * 84 + "\n")
         f.write(f"Total alert records processed (excl. permanent): {alert_counts['alert_count'].sum()}\n")
     print(f"   Regional summary report saved.")
     
