@@ -3,36 +3,36 @@ UKRAINE AIR RAID ALERTS: AI ANALYSIS OVERVIEW
 ================================================================================
 
 GENERAL TRENDS SUMMARY:
-The data reveals a stark bifurcation in threat levels, with regions bordering the frontlines experiencing near-constant air raid alerts, while western regions remain significantly less affected. Over the 90-day period, a general de-escalation in alert duration was observed across most of Ukraine, characterized by a notable downward trend in central and southern oblasts. However, specific areas such as Chernihivska, Kyivska, and Zaporizka oblasts bucked this trend by recording an increase in threat duration. Despite these localized increases, the overall national trend suggests a cooling of alert activity outside of the immediate combat zones.
+The data reveals a stark bifurcation in threat levels, with regions bordering the frontline or occupied territories experiencing near-constant air raid alerts, while western regions remain significantly safer. Average active uptime for the most affected areas, such as Crimea and Luhansk, reached 100%, whereas many western oblasts averaged less than 5% activity. While the majority of regions saw a downward trend in alert duration as the 90-day period progressed, notable exceptions like Chernihivska, Kyivska, and Zaporizka oblasts showed increased or sustained high-threat activity. Overall, the data illustrates a pattern of entrenched high-risk zones contrasted by a general reduction in sporadic alert frequency in the country's interior and west.
 
 ================================================================================
 REGION-SPECIFIC AI INSIGHTS:
 ================================================================================
-- Autonomous Republic of Crimea: Alert duration remains at maximum capacity with no change over the observed period, indicating a constant state of threat.
-- Luhanska oblast: The region maintains a persistent, maximum-level alert state throughout the entire period.
-- Dnipropetrovska oblast: While remaining at nearly total active uptime, the region shows stable threat levels with only negligible fluctuations.
-- Donetska oblast: Despite being an extremely high-threat zone, the region experienced a moderate decrease in alert duration over the three-month period.
-- Kharkivska oblast: Alert duration has remained consistently high and stable, reflecting the region's continued status as a primary frontline target.
-- Zaporizka oblast: This region represents a notable anomaly, with a significant increase in alert duration suggesting an intensification of security risks.
-- Sumska oblast: The threat remains severe but shows a gradual, slight decrease in duration as the period progressed.
-- Chernihivska oblast: Contrary to the national trend of decrease, this region experienced a marked increase in alert frequency and duration.
-- Poltavska oblast: The region saw a significant reduction in alert duration, dropping to approximately half of its initial monthly average.
-- Khersonska oblast: Threat levels have declined sharply over the period, moving from high-frequency alerts to lower activity levels.
-- Mykolaivska oblast: The frequency and duration of alerts have effectively halved since March, marking a substantial reduction in direct threat.
-- Kyivska oblast: Despite the broader trend of decline in many regions, Kyivska oblast saw an increase in threat duration over the study period.
-- Odeska oblast: The region recorded a significant downward shift in alert activity, suggesting a reduction in the immediate air threat.
-- Kirovohradska oblast: A steady decline in active hours indicates a substantial easing of the alert load compared to the beginning of the period.
-- Cherkaska oblast: Threat levels have decreased significantly, indicating a major reduction in the number of alert-driven disruptions.
-- Zhytomyrska oblast: The region remains relatively stable with only a marginal adjustment in alert hours, maintaining a low-intensity threat profile.
-- Vinnytska oblast: The threat levels have dropped dramatically, showing a strong downward trend in alert duration.
-- Kyiv City: Air raid alert activity in the capital has decreased, reflecting a moderate improvement in the overall threat environment.
-- Rivnenska oblast: Alert duration has trended downward, indicating a continued reduction in regional security pressure.
-- Khmelnytska oblast: A clear decline in alert activity has been observed, moving from a low-moderate threat level to near-minimal.
-- Chernivetska oblast: The alert duration has dropped significantly, reaching minimal levels by the end of the observed period.
-- Ternopilska oblast: The threat has essentially dissipated, with alert durations falling to near-zero levels.
-- Volynska oblast: The threat remains at a very low, stable level with no significant variation over the months.
-- Ivano-Frankivska oblast: The region has seen a complete cessation of recorded alert activity by the end of the period.
-- Lvivska oblast: A steady decline in alert activity has resulted in the region reaching near-zero threat levels.
-- Zakarpatska oblast: The region continues to experience minimal alert activity with stable, very low duration throughout the period.
+- Autonomous Republic of Crimea: The alert duration remained at a constant maximum throughout the period, reflecting a persistent high-threat status.
+- Luhanska oblast: The region maintained continuous alert status at 100% throughout the 90-day period, indicating no change in the threat environment.
+- Dnipropetrovska oblast: Despite being one of the most affected regions, the threat level remained consistently high and stable throughout the quarter.
+- Donetska oblast: The alert duration saw a slight decline from 23.1 to 22.0 hours per day, though it remains under significant threat pressure.
+- Kharkivska oblast: The alert status remained consistently severe, showing high stability in the daily threat hours throughout the period.
+- Zaporizka oblast: The region experienced a notable increase in threat intensity, with average daily alert hours rising from 19.0 to 21.4.
+- Sumska oblast: While remaining a high-threat zone, the region saw a marginal decrease in average daily alert duration over the three-month period.
+- Chernihivska oblast: The threat intensity rose during the period, with average daily alert hours climbing from 17.0 to 19.3, signaling an escalation.
+- Poltavska oblast: The region experienced a significant decrease in alert frequency, with daily averages dropping by nearly half from 12.6 to 7.3 hours.
+- Khersonska oblast: There was a sharp reduction in alert duration over the period, with daily averages falling from 9.0 to 4.5 hours.
+- Mykolaivska oblast: The threat environment improved, showing a substantial decline in daily active alert hours from 8.2 to 4.2.
+- Kyivska oblast: Counter to the general downward trend, this region saw a modest increase in alert duration from 4.5 to 5.2 hours per day.
+- Odeska oblast: The region saw a favorable downward shift in alert activity, with daily averages nearly halving from 7.5 to 3.8 hours.
+- Kirovohradska oblast: The threat level significantly subsided during the period, dropping from an average of 7.2 to 2.1 hours per day.
+- Cherkaska oblast: Alert duration experienced a downward trend, moving from 4.5 hours down to 1.7 hours per day.
+- Zhytomyrska oblast: The threat level remained relatively stable and low, with only a negligible decrease in daily alert hours.
+- Vinnytska oblast: The region saw a marked improvement in security status, with alert durations dropping significantly from 3.1 to 0.6 hours per day.
+- Kyiv City: The threat level showed a steady downward trend, with daily alert averages decreasing from 1.6 to 1.0 hours.
+- Rivnenska oblast: The region experienced a slight decrease in alert activity, moving from 1.8 to 1.3 hours per day.
+- Khmelnytska oblast: The alert environment became notably safer over the period, with daily averages falling from 2.1 to 0.4 hours.
+- Chernivetska oblast: The threat level diminished significantly during the 90-day window, moving from a low 1.5 to near-zero daily alert hours.
+- Ternopilska oblast: Alert activity saw a substantial decline, effectively reaching near-zero levels by the end of the period.
+- Volynska oblast: The threat remained consistently low and stable, with minimal daily alert hours reported throughout.
+- Ivano-Frankivska oblast: The region saw a positive trend with alerts essentially ceasing by the end of the period.
+- Lvivska oblast: The threat level reached near-zero daily average hours, indicating a significant reduction in air raid activity.
+- Zakarpatska oblast: The threat level remained consistently low and stable throughout the entire 90-day duration.
 
 ================================================================================

@@ -32,4 +32,4 @@ Ivano-Frankivska oblast        | 197    |       36.03 |      1d 12h |        1.6
 Lvivska oblast                 | 225    |       31.78 |       1d 8h |        1.47%
 Zakarpatska oblast             | 193    |       24.68 |       1d 1h |        1.14%
 ------------------------------------------------------------------------------------
-Total alert records processed (excl. permanent): 27710
+Total alert records processed (excl. permanent): 27708

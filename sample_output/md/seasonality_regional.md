@@ -43,7 +43,7 @@
 | Saturday | 100.00% | `██████████████████████████████████████████████████` |
 | Sunday | 100.00% | `██████████████████████████████████████████████████` **(Max)** |
 
-**AI Overview Insight:** Alert duration remains at maximum capacity with no change over the observed period, indicating a constant state of threat.
+**AI Overview Insight:** The alert duration remained at a constant maximum throughout the period, reflecting a persistent high-threat status.
 
 ---
 
@@ -88,7 +88,7 @@
 | Saturday | 100.00% | `██████████████████████████████████████████████████` |
 | Sunday | 100.00% | `██████████████████████████████████████████████████` **(Max)** |
 
-**AI Overview Insight:** The region maintains a persistent, maximum-level alert state throughout the entire period.
+**AI Overview Insight:** The region maintained continuous alert status at 100% throughout the 90-day period, indicating no change in the threat environment.
 
 ---
 
@@ -133,7 +133,7 @@
 | Saturday | 100.00% | `██████████████████████████████████████████████████` |
 | Sunday | 100.00% | `██████████████████████████████████████████████████` **(Max)** |
 
-**AI Overview Insight:** While remaining at nearly total active uptime, the region shows stable threat levels with only negligible fluctuations.
+**AI Overview Insight:** Despite being one of the most affected regions, the threat level remained consistently high and stable throughout the quarter.
 
 ---
 
@@ -178,7 +178,7 @@
 | Saturday | 94.35% | `███████████████████████████████████████████████░░░` |
 | Sunday | 89.49% | `█████████████████████████████████████████████░░░░░` |
 
-**AI Overview Insight:** Despite being an extremely high-threat zone, the region experienced a moderate decrease in alert duration over the three-month period.
+**AI Overview Insight:** The alert duration saw a slight decline from 23.1 to 22.0 hours per day, though it remains under significant threat pressure.
 
 ---
 
@@ -223,7 +223,7 @@
 | Saturday | 84.63% | `██████████████████████████████████████████░░░░░░░░` |
 | Sunday | 82.76% | `█████████████████████████████████████████░░░░░░░░░` |
 
-**AI Overview Insight:** Alert duration has remained consistently high and stable, reflecting the region's continued status as a primary frontline target.
+**AI Overview Insight:** The alert status remained consistently severe, showing high stability in the daily threat hours throughout the period.
 
 ---
 
@@ -268,7 +268,7 @@
 | Saturday | 78.47% | `███████████████████████████████████████░░░░░░░░░░░` |
 | Sunday | 78.88% | `███████████████████████████████████████░░░░░░░░░░░` |
 
-**AI Overview Insight:** This region represents a notable anomaly, with a significant increase in alert duration suggesting an intensification of security risks.
+**AI Overview Insight:** The region experienced a notable increase in threat intensity, with average daily alert hours rising from 19.0 to 21.4.
 
 ---
 
@@ -313,7 +313,7 @@
 | Saturday | 78.01% | `███████████████████████████████████████░░░░░░░░░░░` |
 | Sunday | 77.42% | `███████████████████████████████████████░░░░░░░░░░░` **(Min)** |
 
-**AI Overview Insight:** The threat remains severe but shows a gradual, slight decrease in duration as the period progressed.
+**AI Overview Insight:** While remaining a high-threat zone, the region saw a marginal decrease in average daily alert duration over the three-month period.
 
 ---
 
@@ -358,7 +358,7 @@
 | Saturday | 68.71% | `██████████████████████████████████░░░░░░░░░░░░░░░░` |
 | Sunday | 62.09% | `███████████████████████████████░░░░░░░░░░░░░░░░░░░` **(Min)** |
 
-**AI Overview Insight:** Contrary to the national trend of decrease, this region experienced a marked increase in alert frequency and duration.
+**AI Overview Insight:** The threat intensity rose during the period, with average daily alert hours climbing from 17.0 to 19.3, signaling an escalation.
 
 ---
 
@@ -403,7 +403,7 @@
 | Saturday | 44.80% | `██████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░` **(Max)** |
 | Sunday | 32.46% | `████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` |
 
-**AI Overview Insight:** The region saw a significant reduction in alert duration, dropping to approximately half of its initial monthly average.
+**AI Overview Insight:** The region experienced a significant decrease in alert frequency, with daily averages dropping by nearly half from 12.6 to 7.3 hours.
 
 ---
 
@@ -448,7 +448,7 @@
 | Saturday | 19.26% | `██████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` **(Min)** |
 | Sunday | 21.46% | `███████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` |
 
-**AI Overview Insight:** Threat levels have declined sharply over the period, moving from high-frequency alerts to lower activity levels.
+**AI Overview Insight:** There was a sharp reduction in alert duration over the period, with daily averages falling from 9.0 to 4.5 hours.
 
 ---
 
@@ -493,7 +493,7 @@
 | Saturday | 18.83% | `█████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` |
 | Sunday | 19.18% | `██████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` |
 
-**AI Overview Insight:** The frequency and duration of alerts have effectively halved since March, marking a substantial reduction in direct threat.
+**AI Overview Insight:** The threat environment improved, showing a substantial decline in daily active alert hours from 8.2 to 4.2.
 
 ---
 
@@ -538,7 +538,7 @@
 | Saturday | 27.52% | `██████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` **(Max)** |
 | Sunday | 20.70% | `██████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` |
 
-**AI Overview Insight:** Despite the broader trend of decline in many regions, Kyivska oblast saw an increase in threat duration over the study period.
+**AI Overview Insight:** Counter to the general downward trend, this region saw a modest increase in alert duration from 4.5 to 5.2 hours per day.
 
 ---
 
@@ -583,7 +583,7 @@
 | Saturday | 16.40% | `████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` |
 | Sunday | 15.01% | `████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` **(Min)** |
 
-**AI Overview Insight:** The region recorded a significant downward shift in alert activity, suggesting a reduction in the immediate air threat.
+**AI Overview Insight:** The region saw a favorable downward shift in alert activity, with daily averages nearly halving from 7.5 to 3.8 hours.
 
 ---
 
@@ -628,7 +628,7 @@
 | Saturday | 15.33% | `████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` |
 | Sunday | 15.75% | `████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` |
 
-**AI Overview Insight:** A steady decline in active hours indicates a substantial easing of the alert load compared to the beginning of the period.
+**AI Overview Insight:** The threat level significantly subsided during the period, dropping from an average of 7.2 to 2.1 hours per day.
 
 ---
 
@@ -673,7 +673,7 @@
 | Saturday | 16.62% | `████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` **(Max)** |
 | Sunday | 11.56% | `██████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` |
 
-**AI Overview Insight:** Threat levels have decreased significantly, indicating a major reduction in the number of alert-driven disruptions.
+**AI Overview Insight:** Alert duration experienced a downward trend, moving from 4.5 hours down to 1.7 hours per day.
 
 ---
 
@@ -718,7 +718,7 @@
 | Saturday | 13.13% | `███████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` |
 | Sunday | 13.18% | `███████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` |
 
-**AI Overview Insight:** The region remains relatively stable with only a marginal adjustment in alert hours, maintaining a low-intensity threat profile.
+**AI Overview Insight:** The threat level remained relatively stable and low, with only a negligible decrease in daily alert hours.
 
 ---
 
@@ -763,7 +763,7 @@
 | Saturday | 3.71% | `██░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` |
 | Sunday | 6.27% | `███░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` |
 
-**AI Overview Insight:** The threat levels have dropped dramatically, showing a strong downward trend in alert duration.
+**AI Overview Insight:** The region saw a marked improvement in security status, with alert durations dropping significantly from 3.1 to 0.6 hours per day.
 
 ---
 
@@ -808,7 +808,7 @@
 | Saturday | 6.97% | `███░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` **(Max)** |
 | Sunday | 4.12% | `██░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` |
 
-**AI Overview Insight:** Air raid alert activity in the capital has decreased, reflecting a moderate improvement in the overall threat environment.
+**AI Overview Insight:** The threat level showed a steady downward trend, with daily alert averages decreasing from 1.6 to 1.0 hours.
 
 ---
 
@@ -853,7 +853,7 @@
 | Saturday | 5.97% | `███░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` |
 | Sunday | 7.35% | `████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` **(Max)** |
 
-**AI Overview Insight:** Alert duration has trended downward, indicating a continued reduction in regional security pressure.
+**AI Overview Insight:** The region experienced a slight decrease in alert activity, moving from 1.8 to 1.3 hours per day.
 
 ---
 
@@ -898,7 +898,7 @@
 | Saturday | 2.54% | `█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` |
 | Sunday | 4.43% | `██░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` |
 
-**AI Overview Insight:** A clear decline in alert activity has been observed, moving from a low-moderate threat level to near-minimal.
+**AI Overview Insight:** The alert environment became notably safer over the period, with daily averages falling from 2.1 to 0.4 hours.
 
 ---
 
@@ -943,7 +943,7 @@
 | Saturday | 1.67% | `█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` |
 | Sunday | 3.30% | `██░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` |
 
-**AI Overview Insight:** The alert duration has dropped significantly, reaching minimal levels by the end of the observed period.
+**AI Overview Insight:** The threat level diminished significantly during the 90-day window, moving from a low 1.5 to near-zero daily alert hours.
 
 ---
 
@@ -988,7 +988,7 @@
 | Saturday | 1.37% | `█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` |
 | Sunday | 1.92% | `█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` |
 
-**AI Overview Insight:** The threat has essentially dissipated, with alert durations falling to near-zero levels.
+**AI Overview Insight:** Alert activity saw a substantial decline, effectively reaching near-zero levels by the end of the period.
 
 ---
 
@@ -1033,7 +1033,7 @@
 | Saturday | 2.00% | `█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` |
 | Sunday | 0.97% | `░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` |
 
-**AI Overview Insight:** The threat remains at a very low, stable level with no significant variation over the months.
+**AI Overview Insight:** The threat remained consistently low and stable, with minimal daily alert hours reported throughout.
 
 ---
 
@@ -1078,7 +1078,7 @@
 | Saturday | 1.31% | `█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` |
 | Sunday | 1.26% | `█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` |
 
-**AI Overview Insight:** The region has seen a complete cessation of recorded alert activity by the end of the period.
+**AI Overview Insight:** The region saw a positive trend with alerts essentially ceasing by the end of the period.
 
 ---
 
@@ -1123,7 +1123,7 @@
 | Saturday | 1.30% | `█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` |
 | Sunday | 0.65% | `░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` |
 
-**AI Overview Insight:** A steady decline in alert activity has resulted in the region reaching near-zero threat levels.
+**AI Overview Insight:** The threat level reached near-zero daily average hours, indicating a significant reduction in air raid activity.
 
 ---
 
@@ -1168,7 +1168,7 @@
 | Saturday | 1.30% | `█░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` |
 | Sunday | 0.64% | `░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░` |
 
-**AI Overview Insight:** The region continues to experience minimal alert activity with stable, very low duration throughout the period.
+**AI Overview Insight:** The threat level remained consistently low and stable throughout the entire 90-day duration.
 
 ---
 

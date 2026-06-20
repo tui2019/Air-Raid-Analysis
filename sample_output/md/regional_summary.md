@@ -31,4 +31,4 @@
 | Lvivska oblast | 225 | 31.78 | 1d 8h | 1.47% |
 | Zakarpatska oblast | 193 | 24.68 | 1d 1h | 1.14% |
 
-*Total alert records processed (excluding permanent alerts): 27710*
+*Total alert records processed (excluding permanent alerts): 27708*
