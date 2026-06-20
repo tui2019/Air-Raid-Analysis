@@ -18,12 +18,54 @@ Outputs are written in a modular structure to:
 """
 
 import os
+import sys
 import json
 import time
+import threading
 import argparse
 import pandas as pd
 import numpy as np
 from datetime import timedelta, datetime
+
+class Spinner:
+    def __init__(self, message="Processing..."):
+        self.message = message
+        self.spinner_chars = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+        self.stop_running = False
+        self.thread = None
+
+    def _spin(self):
+        idx = 0
+        while not self.stop_running:
+            sys.stdout.write(f"\r\033[36m{self.spinner_chars[idx]}\033[0m {self.message}")
+            sys.stdout.flush()
+            idx = (idx + 1) % len(self.spinner_chars)
+            time.sleep(0.08)
+
+    def start(self):
+        self.stop_running = False
+        # Hide cursor
+        sys.stdout.write("\033[?25l")
+        sys.stdout.flush()
+        self.thread = threading.Thread(target=self._spin)
+        self.thread.daemon = True
+        self.thread.start()
+
+    def stop(self):
+        self.stop_running = True
+        if self.thread:
+            self.thread.join()
+            self.thread = None
+        # Clear line and restore cursor
+        sys.stdout.write("\r\033[K\033[?25h")
+        sys.stdout.flush()
+
+    def __enter__(self):
+        self.start()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop()
 
 try:
     from google import genai
@@ -151,16 +193,13 @@ def generate_ai_overview(regional_stats_df, days_to_analyze, daily_union_grid_df
     Generates AI overview from regional stats using Gemini API.
     """
     if not HAS_GENAI:
-        print("   [Gemini API] google-genai library not found. Skipping AI overview.")
         return None
         
     load_env()
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
-        print("   [Gemini API] GEMINI_API_KEY not found in environment. Skipping AI overview.")
         return None
         
-    print("   [Gemini API] Initializing client and generating AI overview...")
     try:
         client = genai.Client(api_key=api_key)
         
@@ -242,13 +281,10 @@ Make sure the JSON is valid and only output the raw JSON object. Do not wrap it 
                 
         result = json.loads(response_text)
         if "general_overview" in result and "regional_overviews" in result:
-            print("   [Gemini API] AI overview generated successfully.")
             return result
         else:
-            print("   [Gemini API] API response did not contain the expected keys.")
             return None
     except Exception as e:
-        print(f"   [Gemini API Warning] Failed to generate AI overview: {e}")
         return None
 
 def main():
@@ -276,17 +312,21 @@ def main():
     
     total_start = time.time()
     
-    print(f"1. Fetching dataset from URL:\n   {DATA_URL}")
     t0 = time.time()
+    spinner = Spinner(f"1. Fetching dataset from URL...")
+    spinner.start()
     try:
         df = pd.read_csv(DATA_URL)
     except Exception as e:
-        print(f"\n[Error] Failed to load data from URL: {e}")
+        spinner.stop()
+        print(f"❌ 1. [Error] Failed to load data from URL: {e}")
         return
-    print(f"   Loaded {len(df)} rows in {time.time()-t0:.4f} seconds.")
+    spinner.stop()
+    print(f"✔ 1. Fetching dataset completed (loaded {len(df)} rows in {time.time()-t0:.2f}s).")
     
-    print("2. Parsing datetimes and cleaning data...")
     t0 = time.time()
+    spinner = Spinner("2. Parsing datetimes and cleaning data...")
+    spinner.start()
     
     # Ensure source column exists
     if 'source' not in df.columns:
@@ -348,10 +388,12 @@ def main():
         
     # Calculate duration
     recent_df['duration'] = recent_df['finished_at'] - recent_df['started_at']
-    print(f"   Parsed and cleaned {len(recent_df)} active alerts in {time.time()-t0:.4f} seconds.")
+    spinner.stop()
+    print(f"✔ 2. Parsing datetimes and cleaning completed ({len(recent_df)} active alerts parsed in {time.time()-t0:.2f}s).")
     
-    print("3. Generating daily resampling grid...")
     t0 = time.time()
+    spinner = Spinner("3. Generating daily resampling grid...")
+    spinner.start()
     
     # Split alerts into daily segments
     daily_segments = []
@@ -378,10 +420,12 @@ def main():
         daily_union_grid['union_hours'] = daily_union_grid.set_index(['oblast', 'date']).index.map(union_durations).fillna(0.0)
         
     # Daily union grid completed
-    print(f"   Daily union grid completed in {time.time()-t0:.4f} seconds.")
+    spinner.stop()
+    print(f"✔ 3. Daily resampling grid completed in {time.time()-t0:.2f}s.")
     
-    print("4. Calculating regional comparison stats...")
     t0 = time.time()
+    spinner = Spinner("4. Calculating regional comparison stats...")
+    spinner.start()
     
     # Union total duration per region (in hours and days)
     union_totals = daily_union_grid.groupby('oblast')['union_hours'].sum().reset_index(name='union_hours')
@@ -407,41 +451,58 @@ def main():
     # Sort descending
     regional_stats = regional_stats.sort_values(by=['union_hours', 'alert_count', 'oblast'], ascending=[False, False, True])
     
-    # Regional statistics comparison ready
-    # Generate AI Overview if configured
-    ai_data = generate_ai_overview(regional_stats, days_to_analyze, daily_union_grid)
+    spinner.stop()
+    print(f"✔ 4. Regional comparison stats calculated in {time.time()-t0:.2f}s.")
     
-    if ai_data:
-        # Write TXT AI Overview
-        ai_txt_path = os.path.join(TXT_OUT_DIR, 'ai_overview.txt')
-        with open(ai_txt_path, 'w', encoding='utf-8') as f:
-            f.write("================================================================================\n")
-            f.write("UKRAINE AIR RAID ALERTS: AI ANALYSIS OVERVIEW\n")
-            f.write("================================================================================\n\n")
-            f.write("GENERAL TRENDS SUMMARY:\n")
-            f.write(f"{ai_data['general_overview']}\n\n")
-            f.write("================================================================================\n")
-            f.write("REGION-SPECIFIC AI INSIGHTS:\n")
-            f.write("================================================================================\n")
-            for oblast, insight in ai_data['regional_overviews'].items():
-                f.write(f"- {oblast}: {insight}\n")
-            f.write("\n================================================================================\n")
-            
-        # Write MD AI Overview
-        ai_md_path = os.path.join(MD_OUT_DIR, 'ai_overview.md')
-        with open(ai_md_path, 'w', encoding='utf-8') as f:
-            f.write("# Ukraine Air Raid Alerts: AI Analysis Overview\n\n")
-            f.write("## 📋 General Trends Summary\n")
-            f.write(f"{ai_data['general_overview']}\n\n")
-            f.write("---\n\n")
-            f.write("## 📍 Region-Specific AI Insights\n")
-            f.write("| Region | AI Summary Insight |\n")
-            f.write("|:---|:---|\n")
-            for oblast, insight in ai_data['regional_overviews'].items():
-                f.write(f"| **{oblast}** | {insight} |\n")
-            f.write("\n")
-        print("   AI overview reports saved.")
-       # Write TXT report 1: Regional Summary
+    t0_ai = time.time()
+    ai_data = None
+    load_env()
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if HAS_GENAI and api_key:
+        spinner = Spinner("   Generating AI analysis overview (Gemini API)...")
+        spinner.start()
+        ai_data = generate_ai_overview(regional_stats, days_to_analyze, daily_union_grid)
+        spinner.stop()
+        if ai_data:
+            print(f"✔   AI overview generated successfully in {time.time()-t0_ai:.2f}s.")
+            # Write TXT AI Overview
+            ai_txt_path = os.path.join(TXT_OUT_DIR, 'ai_overview.txt')
+            with open(ai_txt_path, 'w', encoding='utf-8') as f:
+                f.write("================================================================================\n")
+                f.write("UKRAINE AIR RAID ALERTS: AI ANALYSIS OVERVIEW\n")
+                f.write("================================================================================\n\n")
+                f.write("GENERAL TRENDS SUMMARY:\n")
+                f.write(f"{ai_data['general_overview']}\n\n")
+                f.write("================================================================================\n")
+                f.write("REGION-SPECIFIC AI INSIGHTS:\n")
+                f.write("================================================================================\n")
+                for oblast, insight in ai_data['regional_overviews'].items():
+                    f.write(f"- {oblast}: {insight}\n")
+                f.write("\n================================================================================\n")
+                
+            # Write MD AI Overview
+            ai_md_path = os.path.join(MD_OUT_DIR, 'ai_overview.md')
+            with open(ai_md_path, 'w', encoding='utf-8') as f:
+                f.write("# Ukraine Air Raid Alerts: AI Analysis Overview\n\n")
+                f.write("## 📋 General Trends Summary\n")
+                f.write(f"{ai_data['general_overview']}\n\n")
+                f.write("---\n\n")
+                f.write("## 📍 Region-Specific AI Insights\n")
+                f.write("| Region | AI Summary Insight |\n")
+                f.write("|:---|:---|\n")
+                for oblast, insight in ai_data['regional_overviews'].items():
+                    f.write(f"| **{oblast}** | {insight} |\n")
+                f.write("\n")
+            print("✔   AI overview reports saved.")
+        else:
+            print("❌   Failed to generate AI overview.")
+    else:
+        print("💡   AI overview generation skipped (google-genai missing or GEMINI_API_KEY unset).")
+    # 5. Writing regional summary reports
+    t0 = time.time()
+    spinner = Spinner("5. Writing regional summary reports...")
+    spinner.start()
+    # Write TXT report 1: Regional Summary
     summary_txt_path = os.path.join(TXT_OUT_DIR, 'regional_summary.txt')
     with open(summary_txt_path, 'w') as f:
         f.write(f"================================================================================\n")
@@ -454,7 +515,6 @@ def main():
             f.write(f"{row['oblast']:<30} | {row['alert_count']:<6} | {row['union_hours']:11.2f} | {format_days_to_dh(row['union_days']):>11} | {row['pct_active']:11.2f}%\n")
         f.write("-" * 84 + "\n")
         f.write(f"Total alert records processed (excl. permanent): {alert_counts['alert_count'].sum()}\n")
-    print(f"   Regional summary report saved.")
 
     # Write MD report 1: Regional Summary
     summary_md_path = os.path.join(MD_OUT_DIR, 'regional_summary.md')
@@ -466,9 +526,12 @@ def main():
         for _, row in regional_stats.iterrows():
             f.write(f"| {row['oblast']} | {row['alert_count']} | {row['union_hours']:.2f} | {format_days_to_dh(row['union_days'])} | {row['pct_active']:.2f}% |\n")
         f.write(f"\n*Total alert records processed (excluding permanent alerts): {alert_counts['alert_count'].sum()}*\n")
+    spinner.stop()
+    print(f"✔ 5. Regional summary reports saved in {time.time()-t0:.2f}s.")
     
-    print("5. Calculating seasonality profiles (hourly & weekly)...")
     t0 = time.time()
+    spinner = Spinner("6. Calculating hourly and weekly seasonality profiles...")
+    spinner.start()
     
     # Merge overlapping intervals *per region* first to get regional union intervals.
     # This prevents active percentages from exceeding 100% when sub-regions (raions/hromadas)
@@ -725,11 +788,14 @@ def main():
                 f.write(f"\n**AI Overview Insight:** {ai_data['regional_overviews'][oblast]}\n")
             f.write("\n---\n\n")
             
-    print(f"   Seasonality reports saved.")
+    spinner.stop()
+    print(f"✔ 6. Seasonality profiles reports saved in {time.time()-t0:.2f}s.")
     
-    # 6. Monthly aggregation (if period > 60 days)
+    # 7. Monthly aggregation (if period > 60 days)
     if days_to_analyze > 60:
-        print("6. Calculating historical monthly trends...")
+        t0 = time.time()
+        spinner = Spinner("7. Calculating historical monthly trends...")
+        spinner.start()
         daily_union_grid['month'] = pd.to_datetime(daily_union_grid['date']).dt.to_period('M')
         
         # Count the number of unique days in the window for each month
@@ -774,9 +840,12 @@ def main():
             for oblast, row in monthly_pivot.iterrows():
                 f.write(f"| {oblast} | " + " | ".join(f"{row[m]:.1f}h" for m in monthly_pivot.columns) + " |\n")
                 
-        print(f"   Monthly trends report saved.")
+        spinner.stop()
+        print(f"✔ 7. Historical monthly trends reports saved in {time.time()-t0:.2f}s.")
         
-    print("7. Generating daily sparkline trends...")
+    t0 = time.time()
+    spinner = Spinner("8. Generating daily sparkline trends...")
+    spinner.start()
     # Generate daily sparklines for all regions
     sparklines = []
     # Pivot daily union grid to get dates as columns
@@ -835,10 +904,13 @@ def main():
         f.write(f"* **`#` (hash)**: 18 to 24 hours of active sirens (near-constant threat).\n\n")
         f.write(f"*The timeline is displayed chronologically from left (oldest date) to right (most recent date).*\n")
             
-    print(f"   Daily sparklines report saved.")
+    spinner.stop()
+    print(f"✔ 8. Daily sparkline trends reports saved in {time.time()-t0:.2f}s.")
     
-    # 8. Generate HTML Dashboard
-    print("8. Generating interactive HTML dashboard...")
+    # 9. Generate HTML Dashboard
+    t0 = time.time()
+    spinner = Spinner("9. Generating interactive HTML dashboard...")
+    spinner.start()
     summary_data = []
     for _, row in regional_stats.iterrows():
         summary_data.append({
@@ -1401,7 +1473,9 @@ def main():
     dashboard_path = os.path.join(BASE_DIR, 'output', 'dashboard.html')
     with open(dashboard_path, 'w') as f:
         f.write(html_template)
-    print(f"   Interactive HTML dashboard saved.")
+        
+    spinner.stop()
+    print(f"✔ 9. Interactive HTML dashboard generated and saved in {time.time()-t0:.2f}s.")
 
     total_time = time.time() - total_start
     print(f"\n================================================================================")
