@@ -31,6 +31,7 @@ DATA_URL = "https://raw.githubusercontent.com/Vadimkin/ukrainian-air-raid-sirens
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TXT_OUT_DIR = os.path.join(BASE_DIR, 'output', 'txt')
 CSV_OUT_DIR = os.path.join(BASE_DIR, 'output', 'csv')
+MD_OUT_DIR = os.path.join(BASE_DIR, 'output', 'md')
 
 # Permanent alerts configuration (UTC start times)
 PERMANENT_ALERTS = {
@@ -132,6 +133,7 @@ def main():
         
     os.makedirs(TXT_OUT_DIR, exist_ok=True)
     os.makedirs(CSV_OUT_DIR, exist_ok=True)
+    os.makedirs(MD_OUT_DIR, exist_ok=True)
     
     total_start = time.time()
     
@@ -266,8 +268,7 @@ def main():
     # Save comparison to CSV
     compare_csv_path = os.path.join(CSV_OUT_DIR, 'oblast_duration_analysis.csv')
     regional_stats.to_csv(compare_csv_path, index=False)
-    
-    # Write TXT report 1: Regional Summary
+       # Write TXT report 1: Regional Summary
     summary_txt_path = os.path.join(TXT_OUT_DIR, 'regional_summary.txt')
     with open(summary_txt_path, 'w') as f:
         f.write(f"================================================================================\n")
@@ -281,6 +282,17 @@ def main():
         f.write("-" * 84 + "\n")
         f.write(f"Total alert records processed (excl. permanent): {alert_counts['alert_count'].sum()}\n")
     print(f"   Regional summary report saved.")
+
+    # Write MD report 1: Regional Summary
+    summary_md_path = os.path.join(MD_OUT_DIR, 'regional_summary.md')
+    with open(summary_md_path, 'w') as f:
+        f.write(f"# Ukraine Air Raid Alerts: Regional Comparison Report\n\n")
+        f.write(f"**Period:** `{start_date.strftime('%Y-%m-%d %H:%M:%S UTC')}` to `{max_date.strftime('%Y-%m-%d %H:%M:%S UTC')}` ({days_to_analyze} Days)\n\n")
+        f.write(f"| Oblast (Region) | Alerts | Union Duration (Hours) | Union Duration (Days) | % Time Active |\n")
+        f.write(f"|:---|---:|---:|---:|---:|\n")
+        for _, row in regional_stats.iterrows():
+            f.write(f"| {row['oblast']} | {row['alert_count']} | {row['union_hours']:.2f} | {row['union_days']:.2f} | {row['pct_active']:.2f}% |\n")
+        f.write(f"\n*Total alert records processed (excluding permanent alerts): {alert_counts['alert_count'].sum()}*\n")
     
     print("5. Calculating seasonality profiles (hourly & weekly)...")
     t0 = time.time()
@@ -364,6 +376,7 @@ def main():
     
     weekday_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
     
+    # Write TXT seasonality nationwide
     nation_txt_path = os.path.join(TXT_OUT_DIR, 'seasonality_nationwide.txt')
     with open(nation_txt_path, 'w') as f:
         f.write(f"================================================================================\n")
@@ -401,6 +414,45 @@ def main():
                 elif row['pct'] == w_nat_min:
                     label = " (Min)"
             f.write(f"{weekday_names[int(row['weekday'])]:<12} | {row['pct']:9.2f}% | {get_ascii_indicator(row['pct']/100.0)}{label}\n")
+
+    # Write MD seasonality nationwide
+    nation_md_path = os.path.join(MD_OUT_DIR, 'seasonality_nationwide.md')
+    with open(nation_md_path, 'w') as f:
+        f.write(f"# Nationwide Seasonality Patterns (UTC)\n\n")
+        f.write(f"**Period:** `{start_date.strftime('%Y-%m-%d')}` to `{max_date.strftime('%Y-%m-%d')}`\n\n")
+        
+        f.write(f"## 1. Diurnal (Hourly) Threat Distribution (UTC)\n")
+        f.write(f"Represents the average % of time a region is under alert during each hour bin.\n\n")
+        f.write(f"| Hour (UTC) | Active % | ASCII Heat Indicator |\n")
+        f.write(f"|:---|---:|:---|\n")
+        h_nat_min, h_nat_max = h_nat['pct'].min(), h_nat['pct'].max()
+        has_var_h_nat = (h_nat_min != h_nat_max)
+        for _, row in h_nat.iterrows():
+            hour_str = f"{int(row['hour']):02d}:00-{int(row['hour'])+1:02d}:00"
+            label = ""
+            if has_var_h_nat:
+                if row['pct'] == h_nat_max:
+                    label = " **(Max)**"
+                elif row['pct'] == h_nat_min:
+                    label = " **(Min)**"
+            indicator = get_ascii_indicator(row['pct']/100.0)
+            f.write(f"| {hour_str} | {row['pct']:.2f}% | `{indicator}`{label} |\n")
+            
+        f.write(f"\n## 2. Weekly Threat Distribution\n")
+        f.write(f"Represents the average % of time warning sirens are active on each day of the week.\n\n")
+        f.write(f"| Weekday | Active % | ASCII Heat Indicator |\n")
+        f.write(f"|:---|---:|:---|\n")
+        w_nat_min, w_nat_max = w_nat['pct'].min(), w_nat['pct'].max()
+        has_var_w_nat = (w_nat_min != w_nat_max)
+        for _, row in w_nat.iterrows():
+            label = ""
+            if has_var_w_nat:
+                if row['pct'] == w_nat_max:
+                    label = " **(Max)**"
+                elif row['pct'] == w_nat_min:
+                    label = " **(Min)**"
+            indicator = get_ascii_indicator(row['pct']/100.0)
+            f.write(f"| {weekday_names[int(row['weekday'])]} | {row['pct']:.2f}% | `{indicator}`{label} |\n")
             
     # B. Regional seasonality (written to a dedicated file)
     regional_txt_path = os.path.join(TXT_OUT_DIR, 'seasonality_regional.txt')
@@ -447,6 +499,54 @@ def main():
                         label = " (Min)"
                 f.write(f"  {weekday_names[int(row['weekday'])]:<12} | {row['pct']:6.2f}% | {get_ascii_indicator(row['pct']/100.0)}{label}\n")
             f.write("\n\n" + "-" * 80 + "\n\n")
+
+    # Write MD seasonality regional
+    regional_md_path = os.path.join(MD_OUT_DIR, 'seasonality_regional.md')
+    with open(regional_md_path, 'w') as f:
+        f.write(f"# Region-Specific Seasonality Profiles (UTC)\n\n")
+        f.write(f"**Period:** `{start_date.strftime('%Y-%m-%d')}` to `{max_date.strftime('%Y-%m-%d')}`\n\n")
+        
+        for oblast in regional_stats['oblast']:
+            grp = hour_df[hour_df['oblast'] == oblast]
+            f.write(f"## Oblast: {oblast}\n\n")
+            
+            if grp.empty:
+                f.write("*No alerts recorded in this region during this query window.*\n\n---\n\n")
+                continue
+                
+            h_reg, w_reg = get_seasonality_data(grp)
+            
+            f.write(f"### Hourly Threat Distribution (UTC)\n")
+            f.write(f"| Hour (UTC) | Active % | ASCII Heat Indicator |\n")
+            f.write(f"|:---|---:|:---|\n")
+            h_reg_min, h_reg_max = h_reg['pct'].min(), h_reg['pct'].max()
+            has_var_h_reg = (h_reg_min != h_reg_max)
+            for _, row in h_reg.iterrows():
+                hour_str = f"{int(row['hour']):02d}:00-{int(row['hour'])+1:02d}:00"
+                label = ""
+                if has_var_h_reg:
+                    if row['pct'] == h_reg_max:
+                        label = " **(Max)**"
+                    elif row['pct'] == h_reg_min:
+                        label = " **(Min)**"
+                indicator = get_ascii_indicator(row['pct']/100.0)
+                f.write(f"| {hour_str} | {row['pct']:.2f}% | `{indicator}`{label} |\n")
+                
+            f.write(f"\n### Weekly Threat Distribution\n")
+            f.write(f"| Weekday | Active % | ASCII Heat Indicator |\n")
+            f.write(f"|:---|---:|:---|\n")
+            w_reg_min, w_reg_max = w_reg['pct'].min(), w_reg['pct'].max()
+            has_var_w_reg = (w_reg_min != w_reg_max)
+            for _, row in w_reg.iterrows():
+                label = ""
+                if has_var_w_reg:
+                    if row['pct'] == w_reg_max:
+                        label = " **(Max)**"
+                    elif row['pct'] == w_reg_min:
+                        label = " **(Min)**"
+                indicator = get_ascii_indicator(row['pct']/100.0)
+                f.write(f"| {weekday_names[int(row['weekday'])]} | {row['pct']:.2f}% | `{indicator}`{label} |\n")
+            f.write("\n---\n\n")
             
     print(f"   Seasonality reports saved.")
     
@@ -459,6 +559,7 @@ def main():
         # Pivot table
         monthly_pivot = monthly_union.pivot(index='oblast', columns='month', values='union_hours').fillna(0.0)
         
+        # TXT Monthly
         monthly_txt_path = os.path.join(TXT_OUT_DIR, 'historical_monthly.txt')
         with open(monthly_txt_path, 'w') as f:
             f.write(f"================================================================================\n")
@@ -479,6 +580,17 @@ def main():
                 row_str = f"{oblast:<30} | " + " | ".join(f"{row[m]:10.2f}" for m in monthly_pivot.columns)
                 f.write(row_str + "\n")
             f.write("-" * len(header_str) + "\n")
+
+        # MD Monthly
+        monthly_md_path = os.path.join(MD_OUT_DIR, 'historical_monthly.md')
+        with open(monthly_md_path, 'w') as f:
+            f.write(f"# Historical Monthly Threat Trends (Union Hours per Month)\n\n")
+            months_headers = [str(col) for col in monthly_pivot.columns]
+            f.write(f"| Oblast (Region) | " + " | ".join(f"{m}" for m in months_headers) + " |\n")
+            f.write(f"|:---|" + "|".join("---:" for _ in months_headers) + "|\n")
+            for oblast, row in monthly_pivot.iterrows():
+                f.write(f"| {oblast} | " + " | ".join(f"{row[m]:.2f}" for m in monthly_pivot.columns) + " |\n")
+                
         print(f"   Monthly trends report saved.")
         
     print("7. Generating daily sparkline trends...")
@@ -490,6 +602,7 @@ def main():
     # Sort daily pivot by latest regional summary rank
     daily_pivot = daily_pivot.reindex(regional_stats['oblast'])
     
+    # TXT Sparklines
     spark_txt_path = os.path.join(TXT_OUT_DIR, 'daily_trends_sparklines.txt')
     with open(spark_txt_path, 'w') as f:
         f.write(f"================================================================================\n")
@@ -501,13 +614,31 @@ def main():
         for oblast, row in daily_pivot.iterrows():
             f.write(f"{oblast:<30} | {get_ascii_sparkline(row)}\n")
         f.write("-" * 80 + "\n")
+
+    # MD Sparklines
+    spark_md_path = os.path.join(MD_OUT_DIR, 'daily_trends_sparklines.md')
+    with open(spark_md_path, 'w') as f:
+        f.write(f"# Daily Threat Activity Trend Lines\n\n")
+        f.write(f"**Period:** Last {days_to_analyze} Days\n\n")
+        f.write(f"**Key:**\n")
+        f.write(f"* `.` = 0-3h active threat per day\n")
+        f.write(f"* `_` = 3-6h active threat per day\n")
+        f.write(f"* `-` = 6-12h active threat per day\n")
+        f.write(f"* `=` = 12-18h active threat per day\n")
+        f.write(f"* `#` = 18-24h active threat per day\n\n")
+        f.write(f"| Oblast (Region) | Daily Threat Profile (Timeline $\\rightarrow$) |\n")
+        f.write(f"|:---|:---|\n")
+        for oblast, row in daily_pivot.iterrows():
+            f.write(f"| {oblast} | `{get_ascii_sparkline(row)}` |\n")
+            
     print(f"   Daily sparklines report saved.")
     
     total_time = time.time() - total_start
     print(f"\n================================================================================")
-    f"SUCCESS: Data processed and structured reports saved in output/txt/ and output/csv/"
+    print(f"SUCCESS: Data processed and structured reports saved in output/txt/, output/md/, and output/csv/")
     print(f"Total processing time: {total_time:.4f} seconds.")
     print(f"================================================================================\n")
+
 
 if __name__ == '__main__':
     main()
