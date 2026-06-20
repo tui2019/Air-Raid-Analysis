@@ -11,6 +11,8 @@ __pycache__/
 
 # Output files
 output/
+analysis_summary.txt
+oblast_duration_analysis.csv
 
 # OS metadata
 .DS_Store

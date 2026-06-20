@@ -285,12 +285,30 @@ def main():
     print("5. Calculating seasonality profiles (hourly & weekly)...")
     t0 = time.time()
     
-    # Split alerts into hourly chunks
+    # Merge overlapping intervals *per region* first to get regional union intervals.
+    # This prevents active percentages from exceeding 100% when sub-regions (raions/hromadas)
+    # are alerted simultaneously.
+    union_intervals_by_region = []
+    for oblast, grp in recent_df.groupby('oblast'):
+        intervals = list(zip(grp['started_at'], grp['finished_at']))
+        merged = merge_intervals(intervals)
+        for start, end in merged:
+            union_intervals_by_region.append({
+                'oblast': oblast,
+                'started_at': start,
+                'finished_at': end
+            })
+    union_intervals_df = pd.DataFrame(union_intervals_by_region) if union_intervals_by_region else pd.DataFrame(columns=['oblast', 'started_at', 'finished_at'])
+
+    # Split union intervals into hourly chunks
     hourly_segments = []
-    for idx, row in recent_df.iterrows():
-        hourly_segments.extend(split_to_hourly_segments(row['oblast'], row['started_at'], row['finished_at']))
+    if not union_intervals_df.empty:
+        for idx, row in union_intervals_df.iterrows():
+            hourly_segments.extend(split_to_hourly_segments(row['oblast'], row['started_at'], row['finished_at']))
         
     hour_df = pd.DataFrame(hourly_segments, columns=['oblast', 'weekday', 'hour', 'duration_seconds'])
+    if hour_df.empty:
+        hour_df = pd.DataFrame(columns=['oblast', 'weekday', 'hour', 'duration_seconds'])
     
     # Calculate exact capacities of weekdays in the window (including fractional start/end days)
     def get_weekday_capacities(start, end):
@@ -306,21 +324,31 @@ def main():
     # Helper to calculate percentages
     def get_seasonality_data(df_slice, is_nationwide=False):
         # Hourly distribution
-        h_sum = df_slice.groupby('hour')['duration_seconds'].sum().reset_index()
+        h_sum = df_slice.groupby('hour')['duration_seconds'].sum().reset_index() if not df_slice.empty else pd.DataFrame(columns=['hour', 'duration_seconds'])
+        if 'duration_seconds' not in h_sum.columns:
+            h_sum['duration_seconds'] = 0.0
         h_sum['hours'] = h_sum['duration_seconds'] / 3600.0
-        # Normalization: total capacity of each hour bin is exactly days_to_analyze hours
-        h_sum['pct'] = (h_sum['hours'] / days_to_analyze) * 100.0
+        
+        # Normalization: total capacity of each hour bin is exactly days_to_analyze hours.
+        # For nationwide average, capacity is scaled by the total number of regions (all_oblasts).
+        denom_hours = days_to_analyze * len(all_oblasts) if is_nationwide else days_to_analyze
+        h_sum['pct'] = (h_sum['hours'] / denom_hours) * 100.0
         
         # Ensure all 24 hours are represented
         h_map = pd.DataFrame({'hour': range(24)})
         h_sum = pd.merge(h_map, h_sum, on='hour', how='left').fillna(0.0)
         
         # Weekly distribution
-        w_sum = df_slice.groupby('weekday')['duration_seconds'].sum().reset_index()
+        w_sum = df_slice.groupby('weekday')['duration_seconds'].sum().reset_index() if not df_slice.empty else pd.DataFrame(columns=['weekday', 'duration_seconds'])
+        if 'duration_seconds' not in w_sum.columns:
+            w_sum['duration_seconds'] = 0.0
         w_sum['hours'] = w_sum['duration_seconds'] / 3600.0
-        # Normalization: total capacity of each weekday is weekday_capacities[weekday] hours
+        
+        # Normalization: total capacity of each weekday is weekday_capacities[weekday] hours.
+        # For nationwide average, capacity is scaled by the total number of regions.
+        denom_multiplier = len(all_oblasts) if is_nationwide else 1.0
         w_sum['pct'] = w_sum.apply(
-            lambda r: (r['hours'] / weekday_capacities[int(r['weekday'])]) * 100.0 
+            lambda r: (r['hours'] / (weekday_capacities[int(r['weekday'])] * denom_multiplier)) * 100.0 
             if weekday_capacities[int(r['weekday'])] > 0 else 0.0, 
             axis=1
         )
@@ -347,16 +375,32 @@ def main():
         f.write(f"Represents the average % of time a region is under alert during each hour bin.\n\n")
         f.write(f"{'Hour (UTC)':<12} | {'Active %':<10} | {'ASCII Heat Indicator':<50}\n")
         f.write("-" * 80 + "\n")
+        h_nat_min, h_nat_max = h_nat['pct'].min(), h_nat['pct'].max()
+        has_var_h_nat = (h_nat_min != h_nat_max)
         for _, row in h_nat.iterrows():
             hour_str = f"{int(row['hour']):02d}:00-{int(row['hour'])+1:02d}:00"
-            f.write(f"{hour_str:<12} | {row['pct']:9.2f}% | {get_ascii_indicator(row['pct']/100.0)}\n")
+            label = ""
+            if has_var_h_nat:
+                if row['pct'] == h_nat_max:
+                    label = " (Max)"
+                elif row['pct'] == h_nat_min:
+                    label = " (Min)"
+            f.write(f"{hour_str:<12} | {row['pct']:9.2f}% | {get_ascii_indicator(row['pct']/100.0)}{label}\n")
             
         f.write(f"\n2. WEEKLY THREAT DISTRIBUTION\n")
         f.write(f"Represents the average % of time warning sirens are active on each day of the week.\n\n")
         f.write(f"{'Weekday':<12} | {'Active %':<10} | {'ASCII Heat Indicator':<50}\n")
         f.write("-" * 80 + "\n")
+        w_nat_min, w_nat_max = w_nat['pct'].min(), w_nat['pct'].max()
+        has_var_w_nat = (w_nat_min != w_nat_max)
         for _, row in w_nat.iterrows():
-            f.write(f"{weekday_names[int(row['weekday'])]:<12} | {row['pct']:9.2f}% | {get_ascii_indicator(row['pct']/100.0)}\n")
+            label = ""
+            if has_var_w_nat:
+                if row['pct'] == w_nat_max:
+                    label = " (Max)"
+                elif row['pct'] == w_nat_min:
+                    label = " (Min)"
+            f.write(f"{weekday_names[int(row['weekday'])]:<12} | {row['pct']:9.2f}% | {get_ascii_indicator(row['pct']/100.0)}{label}\n")
             
     # B. Regional seasonality (written to a dedicated file)
     regional_txt_path = os.path.join(TXT_OUT_DIR, 'seasonality_regional.txt')
@@ -379,13 +423,29 @@ def main():
             h_reg, w_reg = get_seasonality_data(grp)
             
             f.write(f"Hourly Threat Distribution (UTC):\n")
+            h_reg_min, h_reg_max = h_reg['pct'].min(), h_reg['pct'].max()
+            has_var_h_reg = (h_reg_min != h_reg_max)
             for _, row in h_reg.iterrows():
                 hour_str = f"{int(row['hour']):02d}:00-{int(row['hour'])+1:02d}:00"
-                f.write(f"  {hour_str:<12} | {row['pct']:6.2f}% | {get_ascii_indicator(row['pct']/100.0)}\n")
+                label = ""
+                if has_var_h_reg:
+                    if row['pct'] == h_reg_max:
+                        label = " (Max)"
+                    elif row['pct'] == h_reg_min:
+                        label = " (Min)"
+                f.write(f"  {hour_str:<12} | {row['pct']:6.2f}% | {get_ascii_indicator(row['pct']/100.0)}{label}\n")
                 
             f.write(f"\nWeekly Threat Distribution:\n")
+            w_reg_min, w_reg_max = w_reg['pct'].min(), w_reg['pct'].max()
+            has_var_w_reg = (w_reg_min != w_reg_max)
             for _, row in w_reg.iterrows():
-                f.write(f"  {weekday_names[int(row['weekday'])]:<12} | {row['pct']:6.2f}% | {get_ascii_indicator(row['pct']/100.0)}\n")
+                label = ""
+                if has_var_w_reg:
+                    if row['pct'] == w_reg_max:
+                        label = " (Max)"
+                    elif row['pct'] == w_reg_min:
+                        label = " (Min)"
+                f.write(f"  {weekday_names[int(row['weekday'])]:<12} | {row['pct']:6.2f}% | {get_ascii_indicator(row['pct']/100.0)}{label}\n")
             f.write("\n\n" + "-" * 80 + "\n\n")
             
     print(f"   Seasonality reports saved.")
