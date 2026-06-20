@@ -556,14 +556,14 @@ def main():
         daily_union_grid['month'] = pd.to_datetime(daily_union_grid['date']).dt.to_period('M')
         monthly_union = daily_union_grid.groupby(['oblast', 'month'])['union_hours'].sum().reset_index()
         
-        # Pivot table
-        monthly_pivot = monthly_union.pivot(index='oblast', columns='month', values='union_hours').fillna(0.0)
+        # Pivot table and convert to days
+        monthly_pivot = (monthly_union.pivot(index='oblast', columns='month', values='union_hours').fillna(0.0) / 24.0)
         
         # TXT Monthly
         monthly_txt_path = os.path.join(TXT_OUT_DIR, 'historical_monthly.txt')
         with open(monthly_txt_path, 'w') as f:
             f.write(f"================================================================================\n")
-            f.write(f"HISTORICAL MONTHLY THREAT TRENDS (Union Hours per Month)\n")
+            f.write(f"HISTORICAL MONTHLY THREAT TRENDS (Union Days per Month)\n")
             f.write(f"================================================================================\n\n")
             
             # Format header
@@ -584,7 +584,7 @@ def main():
         # MD Monthly
         monthly_md_path = os.path.join(MD_OUT_DIR, 'historical_monthly.md')
         with open(monthly_md_path, 'w') as f:
-            f.write(f"# Historical Monthly Threat Trends (Union Hours per Month)\n\n")
+            f.write(f"# Historical Monthly Threat Trends (Union Days per Month)\n\n")
             months_headers = [str(col) for col in monthly_pivot.columns]
             f.write(f"| Oblast (Region) | " + " | ".join(f"{m}" for m in months_headers) + " |\n")
             f.write(f"|:---|" + "|".join("---:" for _ in months_headers) + "|\n")
