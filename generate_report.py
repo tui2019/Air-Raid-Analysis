@@ -168,8 +168,16 @@ def generate_ai_overview(regional_stats_df, days_to_analyze, daily_union_grid_df
         if daily_union_grid_df is not None and not daily_union_grid_df.empty:
             df_copy = daily_union_grid_df.copy()
             df_copy['month'] = pd.to_datetime(df_copy['date']).dt.to_period('M')
+            
+            # Count the number of unique days in the window for each month
+            days_in_month = df_copy.groupby('month')['date'].nunique()
+            
             monthly_totals = df_copy.groupby(['oblast', 'month'])['union_hours'].sum().reset_index()
-            monthly_pivot = monthly_totals.pivot(index='oblast', columns='month', values='union_hours').fillna(0.0) / 24.0
+            # Calculate average daily hours for each month
+            monthly_totals['avg_hours_per_day'] = monthly_totals.apply(lambda r: r['union_hours'] / days_in_month[r['month']], axis=1)
+            
+            # Pivot table using average daily hours
+            monthly_pivot = monthly_totals.pivot(index='oblast', columns='month', values='avg_hours_per_day').fillna(0.0)
             
             trend_lines = []
             for oblast, row in monthly_pivot.iterrows():
@@ -178,11 +186,11 @@ def generate_ai_overview(regional_stats_df, days_to_analyze, daily_union_grid_df
                     first_month_val = row[months[0]]
                     last_month_val = row[months[-1]]
                     diff = last_month_val - first_month_val
-                    direction = "increased" if diff > 0.05 else ("decreased" if diff < -0.05 else "remained stable")
-                    trend_lines.append(f"- {oblast}: Threat went from {first_month_val:.1f} days in {months[0]} to {last_month_val:.1f} days in {months[-1]} ({direction})")
+                    direction = "increased" if diff > 0.5 else ("decreased" if diff < -0.5 else "remained stable")
+                    trend_lines.append(f"- {oblast}: Threat went from {first_month_val:.1f} hours/day in {months[0]} to {last_month_val:.1f} hours/day in {months[-1]} ({direction})")
                 else:
-                    trend_lines.append(f"- {oblast}: Threat was {row[months[0]]:.1f} days in {months[0]}")
-            monthly_trend_info = "Monthly trend over time (Threat Uptime in days):\n" + "\n".join(trend_lines)
+                    trend_lines.append(f"- {oblast}: Threat was {row[months[0]]:.1f} hours/day in {months[0]}")
+            monthly_trend_info = "Monthly trend over time (Average Active Uptime in hours per day):\n" + "\n".join(trend_lines)
         
         table_rows = []
         for _, row in regional_stats_df.iterrows():
@@ -718,16 +726,22 @@ def main():
     if days_to_analyze > 60:
         print("6. Calculating historical monthly trends...")
         daily_union_grid['month'] = pd.to_datetime(daily_union_grid['date']).dt.to_period('M')
-        monthly_union = daily_union_grid.groupby(['oblast', 'month'])['union_hours'].sum().reset_index()
         
-        # Pivot table and convert to days
-        monthly_pivot = (monthly_union.pivot(index='oblast', columns='month', values='union_hours').fillna(0.0) / 24.0)
+        # Count the number of unique days in the window for each month
+        days_in_month = daily_union_grid.groupby('month')['date'].nunique()
+        
+        monthly_union = daily_union_grid.groupby(['oblast', 'month'])['union_hours'].sum().reset_index()
+        # Calculate average daily hours for each month
+        monthly_union['avg_hours_per_day'] = monthly_union.apply(lambda r: r['union_hours'] / days_in_month[r['month']], axis=1)
+        
+        # Pivot table using average daily hours
+        monthly_pivot = monthly_union.pivot(index='oblast', columns='month', values='avg_hours_per_day').fillna(0.0)
         
         # TXT Monthly
         monthly_txt_path = os.path.join(TXT_OUT_DIR, 'historical_monthly.txt')
         with open(monthly_txt_path, 'w') as f:
             f.write(f"================================================================================\n")
-            f.write(f"HISTORICAL MONTHLY THREAT TRENDS (Union Days per Month)\n")
+            f.write(f"HISTORICAL MONTHLY THREAT TRENDS (Average Active Hours per Day)\n")
             f.write(f"================================================================================\n\n")
             
             # Format header
@@ -741,19 +755,19 @@ def main():
             monthly_pivot = monthly_pivot.sort_values(by=latest_month, ascending=False)
             
             for oblast, row in monthly_pivot.iterrows():
-                row_str = f"{oblast:<30} | " + " | ".join(f"{format_days_to_dh(row[m]):>10}" for m in monthly_pivot.columns)
+                row_str = f"{oblast:<30} | " + " | ".join(f"{row[m]:>9.1f}h" for m in monthly_pivot.columns)
                 f.write(row_str + "\n")
             f.write("-" * len(header_str) + "\n")
 
         # MD Monthly
         monthly_md_path = os.path.join(MD_OUT_DIR, 'historical_monthly.md')
         with open(monthly_md_path, 'w') as f:
-            f.write(f"# Historical Monthly Threat Trends (Union Days per Month)\n\n")
+            f.write(f"# Historical Monthly Threat Trends (Average Active Hours per Day)\n\n")
             months_headers = [str(col) for col in monthly_pivot.columns]
             f.write(f"| Oblast (Region) | " + " | ".join(f"{m}" for m in months_headers) + " |\n")
             f.write(f"|:---|" + "|".join("---:" for _ in months_headers) + "|\n")
             for oblast, row in monthly_pivot.iterrows():
-                f.write(f"| {oblast} | " + " | ".join(f"{format_days_to_dh(row[m])}" for m in monthly_pivot.columns) + " |\n")
+                f.write(f"| {oblast} | " + " | ".join(f"{row[m]:.1f}h" for m in monthly_pivot.columns) + " |\n")
                 
         print(f"   Monthly trends report saved.")
         
@@ -885,7 +899,7 @@ def main():
     if days_to_analyze > 60:
         monthly_trends_html = f"""
         <div class="card" style="margin-top: 2rem;">
-            <div class="card-title">Historical Monthly Threat Trends (Union Days per Month)</div>
+            <div class="card-title">Historical Monthly Threat Trends (Average Active Hours per Day)</div>
             <div class="table-container">
                 <table>
                     <thead>
@@ -899,7 +913,7 @@ def main():
         for oblast, row in monthly_pivot.iterrows():
             monthly_trends_html += f"<tr><td><strong>{oblast}</strong></td>"
             for m in monthly_pivot.columns:
-                monthly_trends_html += f'<td align="right">{format_days_to_dh(row[m])}</td>'
+                monthly_trends_html += f'<td align="right">{row[m]:.1f}h</td>'
             monthly_trends_html += "</tr>"
         monthly_trends_html += """
                     </tbody>
