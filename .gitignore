@@ -10,8 +10,7 @@ __pycache__/
 *$py.class
 
 # Output files
-oblast_duration_analysis.csv
-analysis_summary.txt
+output/
 
 # OS metadata
 .DS_Store
