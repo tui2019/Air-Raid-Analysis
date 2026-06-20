@@ -30,7 +30,6 @@ DATA_URL = "https://raw.githubusercontent.com/Vadimkin/ukrainian-air-raid-sirens
 # Output directories
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TXT_OUT_DIR = os.path.join(BASE_DIR, 'output', 'txt')
-CSV_OUT_DIR = os.path.join(BASE_DIR, 'output', 'csv')
 MD_OUT_DIR = os.path.join(BASE_DIR, 'output', 'md')
 
 # Permanent alerts configuration (UTC start times)
@@ -143,7 +142,6 @@ def main():
         shutil.rmtree(output_parent_dir)
         
     os.makedirs(TXT_OUT_DIR, exist_ok=True)
-    os.makedirs(CSV_OUT_DIR, exist_ok=True)
     os.makedirs(MD_OUT_DIR, exist_ok=True)
     
     total_start = time.time()
@@ -244,10 +242,8 @@ def main():
         # Update daily union grid
         daily_union_grid['union_hours'] = daily_union_grid.set_index(['oblast', 'date']).index.map(union_durations).fillna(0.0)
         
-    # Save daily timeline to CSV
-    daily_csv_path = os.path.join(CSV_OUT_DIR, 'daily_regional_trends.csv')
-    daily_union_grid.to_csv(daily_csv_path, index=False)
-    print(f"   Daily union grid completed and saved to CSV in {time.time()-t0:.4f} seconds.")
+    # Daily union grid completed
+    print(f"   Daily union grid completed in {time.time()-t0:.4f} seconds.")
     
     print("4. Calculating regional comparison stats...")
     t0 = time.time()
@@ -276,9 +272,7 @@ def main():
     # Sort descending
     regional_stats = regional_stats.sort_values(by=['union_hours', 'alert_count', 'oblast'], ascending=[False, False, True])
     
-    # Save comparison to CSV
-    compare_csv_path = os.path.join(CSV_OUT_DIR, 'oblast_duration_analysis.csv')
-    regional_stats.to_csv(compare_csv_path, index=False)
+    # Regional statistics comparison ready
        # Write TXT report 1: Regional Summary
     summary_txt_path = os.path.join(TXT_OUT_DIR, 'regional_summary.txt')
     with open(summary_txt_path, 'w') as f:
@@ -1156,7 +1150,7 @@ def main():
 
     total_time = time.time() - total_start
     print(f"\n================================================================================")
-    print(f"SUCCESS: Data processed and structured reports saved in output/txt/, output/md/, output/csv/, and output/dashboard.html")
+    print(f"SUCCESS: Data processed and structured reports saved in output/txt/, output/md/, and output/dashboard.html")
     print(f"Total processing time: {total_time:.4f} seconds.")
     print(f"================================================================================\n")
 

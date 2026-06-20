@@ -10,9 +10,6 @@ The generated results are organized as follows to prevent clutter:
 
 ```
 output/
-├── csv/
-│   ├── daily_regional_trends.csv     # Daily union threat hours per region (0.0 to 24.0)
-│   └── oblast_duration_analysis.csv  # Combined stats (threat hours, alarm counts, active %)
 └── txt/
     ├── daily_trends_sparklines.txt   # ASCII timeline trend indicators for all regions
     ├── historical_monthly.txt        # Month-by-month pivot totals (for queries > 60 days)
@@ -27,7 +24,7 @@ output/
 
 ### A. Daily Resampling (Union Uptime)
 *   **Methodology:** Alerts are segmented into calendar-day blocks. For each region on each calendar day, overlapping intervals are merged and summed to compute the **Union threat hours** (0.0 to 24.0).
-*   *Output:* Saved to `output/csv/daily_regional_trends.csv`.
+*   *Output:* Processed in memory to feed downstream visualizations (dashboard and sparklines).
 
 ### B. Monthly Aggregation
 *   **Methodology:** Groups the daily union hours by calendar month (e.g., `2026-05`, `2026-06`) for each region.
