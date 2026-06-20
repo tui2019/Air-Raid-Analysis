@@ -7,14 +7,15 @@ https://raw.githubusercontent.com/Vadimkin/ukrainian-air-raid-sirens-dataset/ref
 
 It calculates:
 1. Regional threat comparisons (siren counts, union threat durations).
-2. Daily union threat timelines for all 26 regions (saved to CSV).
+2. Daily union threat timelines for all 26 regions.
 3. Monthly aggregated threat timelines (if query period > 60 days).
 4. Nationwide and region-specific diurnal (hourly) and weekly seasonality profiles.
 5. ASCII sparklines for visual trend inspection.
 
 Outputs are written in a modular structure to:
 - output/txt/
-- output/csv/
+- output/md/
+- output/dashboard.html
 """
 
 import os
@@ -433,6 +434,7 @@ def main():
     
     # Alert count (including injected permanent alert records)
     alert_counts = recent_df.groupby('oblast').size().reset_index(name='alert_count')
+    total_real_alerts = len(recent_df[recent_df['source'] != 'official_permanent'])
     
     # Merge stats together
     regional_stats = pd.DataFrame({'oblast': all_oblasts})
@@ -513,7 +515,7 @@ def main():
         for _, row in regional_stats.iterrows():
             f.write(f"{row['oblast']:<30} | {row['alert_count']:<6} | {row['union_hours']:11.2f} | {format_days_to_dh(row['union_days']):>11} | {row['pct_active']:11.2f}%\n")
         f.write("-" * 84 + "\n")
-        f.write(f"Total alert records processed (excl. permanent): {alert_counts['alert_count'].sum()}\n")
+        f.write(f"Total alert records processed (excl. permanent): {total_real_alerts}\n")
 
     # Write MD report 1: Regional Summary
     summary_md_path = os.path.join(MD_OUT_DIR, 'regional_summary.md')
@@ -524,7 +526,7 @@ def main():
         f.write(f"|:---|---:|---:|---:|---:|\n")
         for _, row in regional_stats.iterrows():
             f.write(f"| {row['oblast']} | {row['alert_count']} | {row['union_hours']:.2f} | {format_days_to_dh(row['union_days'])} | {row['pct_active']:.2f}% |\n")
-        f.write(f"\n*Total alert records processed (excluding permanent alerts): {alert_counts['alert_count'].sum()}*\n")
+        f.write(f"\n*Total alert records processed (excluding permanent alerts): {total_real_alerts}*\n")
     spinner.stop()
     print(f"✔ 6. Regional summary reports saved in {time.time()-t0:.2f}s.")
     
