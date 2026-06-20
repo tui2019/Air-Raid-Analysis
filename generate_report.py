@@ -192,7 +192,7 @@ Your response MUST be a JSON object with the following exact keys and structure:
 Make sure the JSON is valid and only output the raw JSON object. Do not wrap it in markdown code blocks like ```json ... ```. The keys in "regional_overviews" must match the exact names of the oblasts in the data.
 """
         response = client.models.generate_content(
-            model="gemini-2.0-flash-lite",
+            model="gemini-flash-lite-latest",
             contents=prompt
         )
         
