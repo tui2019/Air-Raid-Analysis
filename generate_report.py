@@ -111,6 +111,15 @@ def get_ascii_indicator(pct):
     bar_len = int(round(pct * 50))  # Max 50 characters
     return "█" * bar_len if bar_len > 0 else "."
 
+def format_days_to_dh(days_float):
+    """
+    Formats a decimal number of days (e.g. 1.5) to a string representation like "1d 12h".
+    """
+    total_hours = int(round(days_float * 24.0))
+    d = total_hours // 24
+    h = total_hours % 24
+    return f"{d}d {h}h"
+
 def main():
     parser = argparse.ArgumentParser(description="Generate Ukraine air raid alerts reports.")
     parser.add_argument(
@@ -278,7 +287,7 @@ def main():
         f.write(f"{'Oblast (Region)':<30} | {'Alerts':<6} | {'Hours':<11} | {'Days':<11} | {'% Time Active':<13}\n")
         f.write("-" * 84 + "\n")
         for _, row in regional_stats.iterrows():
-            f.write(f"{row['oblast']:<30} | {row['alert_count']:<6} | {row['union_hours']:11.2f} | {row['union_days']:11.2f} | {row['pct_active']:11.2f}%\n")
+            f.write(f"{row['oblast']:<30} | {row['alert_count']:<6} | {row['union_hours']:11.2f} | {format_days_to_dh(row['union_days']):>11} | {row['pct_active']:11.2f}%\n")
         f.write("-" * 84 + "\n")
         f.write(f"Total alert records processed (excl. permanent): {alert_counts['alert_count'].sum()}\n")
     print(f"   Regional summary report saved.")
@@ -291,7 +300,7 @@ def main():
         f.write(f"| Oblast (Region) | Alerts | Union Duration (Hours) | Union Duration (Days) | % Time Active |\n")
         f.write(f"|:---|---:|---:|---:|---:|\n")
         for _, row in regional_stats.iterrows():
-            f.write(f"| {row['oblast']} | {row['alert_count']} | {row['union_hours']:.2f} | {row['union_days']:.2f} | {row['pct_active']:.2f}% |\n")
+            f.write(f"| {row['oblast']} | {row['alert_count']} | {row['union_hours']:.2f} | {format_days_to_dh(row['union_days'])} | {row['pct_active']:.2f}% |\n")
         f.write(f"\n*Total alert records processed (excluding permanent alerts): {alert_counts['alert_count'].sum()}*\n")
     
     print("5. Calculating seasonality profiles (hourly & weekly)...")
@@ -577,7 +586,7 @@ def main():
             monthly_pivot = monthly_pivot.sort_values(by=latest_month, ascending=False)
             
             for oblast, row in monthly_pivot.iterrows():
-                row_str = f"{oblast:<30} | " + " | ".join(f"{row[m]:10.2f}" for m in monthly_pivot.columns)
+                row_str = f"{oblast:<30} | " + " | ".join(f"{format_days_to_dh(row[m]):>10}" for m in monthly_pivot.columns)
                 f.write(row_str + "\n")
             f.write("-" * len(header_str) + "\n")
 
@@ -589,7 +598,7 @@ def main():
             f.write(f"| Oblast (Region) | " + " | ".join(f"{m}" for m in months_headers) + " |\n")
             f.write(f"|:---|" + "|".join("---:" for _ in months_headers) + "|\n")
             for oblast, row in monthly_pivot.iterrows():
-                f.write(f"| {oblast} | " + " | ".join(f"{row[m]:.2f}" for m in monthly_pivot.columns) + " |\n")
+                f.write(f"| {oblast} | " + " | ".join(f"{format_days_to_dh(row[m])}" for m in monthly_pivot.columns) + " |\n")
                 
         print(f"   Monthly trends report saved.")
         
