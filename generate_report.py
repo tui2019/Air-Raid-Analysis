@@ -880,12 +880,14 @@ def main():
     ai_regional_json_str = "{}"
     if ai_data:
         ai_block_html = f"""
-    <div class="card" style="max-width: 1400px; margin: 0 auto 2rem auto; width: calc(100% - 3rem);">
+    <div class="card" style="grid-column: 1 / -1;">
         <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-bottom: none; margin-bottom: 0; padding-bottom: 0;" onclick="toggleAiOverview()">
             <span style="display: flex; align-items: center; gap: 0.5rem; color: #f1f5f9;">
                 <span>🤖</span> AI Overview (General Trends)
             </span>
-            <span id="aiToggleIcon" style="font-size: 0.875rem; color: #94a3b8; font-weight: normal;">[Expand]</span>
+            <svg id="aiToggleArrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.3s ease; transform: rotate(0deg); color: #94a3b8;">
+                <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
         </div>
         <div id="aiContent" style="display: none; margin-top: 1rem; border-top: 1px solid #383c45; padding-top: 1rem; line-height: 1.6; color: #cbd5e1; font-size: 0.95rem;">
             {ai_data['general_overview']}
@@ -1092,9 +1094,8 @@ def main():
         </div>
     </div>
     
-    {ai_block_html}
-    
     <div class="container">
+        {ai_block_html}
         <!-- Left Column: Table and Monthly Trends -->
         <div>
             <div class="card">
@@ -1176,13 +1177,13 @@ def main():
 
         function toggleAiOverview() {{
             var content = document.getElementById("aiContent");
-            var icon = document.getElementById("aiToggleIcon");
+            var arrow = document.getElementById("aiToggleArrow");
             if (content.style.display === "none") {{
                 content.style.display = "block";
-                icon.innerText = "[Collapse]";
+                arrow.style.transform = "rotate(180deg)";
             }} else {{
                 content.style.display = "none";
-                icon.innerText = "[Expand]";
+                arrow.style.transform = "rotate(0deg)";
             }}
         }}
 
